@@ -48,8 +48,8 @@ A security-first, agentic AI system that integrates with Jira and Confluence (re
          │
     ┌────┴────┐
 ┌───▼──┐  ┌──▼────┐
-│ Jira │  │Conflue│
-│(Read)│  │ nce   │
+│ Jira │  │Confluence│
+│(Read)│  │  (Read)  │
 └──────┘  └───────┘
 ```
 

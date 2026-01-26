@@ -316,9 +316,39 @@ plt.savefig('knowledge_graph.png')
 ## Performance Considerations
 
 - **Graph Size**: NetworkX handles 10,000+ nodes efficiently
-- **Persistence**: Graph is saved after each update
+- **Persistence**: Graph is saved after each update using pickle format
+  - ⚠️ **Security Note**: Pickle files can execute arbitrary code when loaded
+  - Only load graph files from trusted sources
+  - In production with untrusted data, use GraphML format: `nx.write_graphml(graph, path)`
 - **Memory**: Loaded in memory for fast queries
 - **Scalability**: For > 1M nodes, consider Neo4j or other graph databases
+
+### Safer Serialization (Production Alternative)
+
+For production environments with security concerns:
+
+```python
+# Save as GraphML (safer, no code execution)
+import networkx as nx
+nx.write_graphml(graph, "knowledge_graph.graphml")
+
+# Load from GraphML
+graph = nx.read_graphml("knowledge_graph.graphml")
+
+# Or use JSON
+import json
+from networkx.readwrite import json_graph
+
+# Save
+data = json_graph.node_link_data(graph)
+with open("knowledge_graph.json", "w") as f:
+    json.dump(data, f)
+
+# Load
+with open("knowledge_graph.json", "r") as f:
+    data = json.load(f)
+graph = json_graph.node_link_graph(data)
+```
 
 ## Benefits
 

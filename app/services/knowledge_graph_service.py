@@ -25,6 +25,9 @@ class KnowledgeGraphService:
         """Load knowledge graph from disk if it exists"""
         if os.path.exists(self.graph_path):
             try:
+                # Security note: Using pickle for graph storage
+                # Only load graphs from trusted sources
+                # For production, consider using JSON or GraphML formats
                 with open(self.graph_path, 'rb') as f:
                     self.graph = pickle.load(f)
                 logger.info(f"Loaded knowledge graph with {self.graph.number_of_nodes()} nodes")
@@ -41,6 +44,9 @@ class KnowledgeGraphService:
         
         try:
             os.makedirs(os.path.dirname(self.graph_path), exist_ok=True)
+            # Security note: Pickle is used for convenience but has security implications
+            # In production, ensure only trusted processes can write to this file
+            # Alternative: Use nx.write_graphml() for safer serialization
             with open(self.graph_path, 'wb') as f:
                 pickle.dump(self.graph, f)
             logger.info(f"Saved knowledge graph with {self.graph.number_of_nodes()} nodes")
