@@ -1,16 +1,27 @@
 # Jira-Confluence Agentic AI System 🤖
 
-A security-first, agentic AI system that integrates with Jira and Confluence (read-only) to provide delivery intelligence and decision support for engineering teams.
+A security-first, agentic AI system that integrates with Jira and Confluence (read-only) to provide delivery intelligence and decision support for engineering teams. Features **Knowledge Graph RAG** with NetworkX and **local LLM support** via Ollama.
 
-## 🌟 Features
+## 🌟 Key Features
 
 - **🔐 Security-First Design**: Read-only access to Jira and Confluence, environment-based configuration, secure API key handling
-- **🤖 Agentic AI**: Powered by LangChain and OpenAI, with autonomous decision-making capabilities
+- **🤖 Agentic AI**: Powered by LangChain with support for OpenAI or Ollama (local)
+- **🕸️ Knowledge Graph RAG**: NetworkX-powered graph database for relationship-aware insights
+- **🏠 Fully Local Option**: Run completely offline with Ollama (no external API calls)
 - **💬 Conversational Interface**: Simple, intuitive chat UI with conversation history
 - **📊 Delivery Intelligence**: Analyze project metrics, sprint progress, and team performance
 - **🔍 Smart Search**: Search and analyze Jira issues and Confluence documentation
+- **⚡ UV Support**: Ultra-fast package installation with UV
 - **🐳 Docker Ready**: Easy deployment locally or in the cloud via Docker containers
 - **💾 Persistent Memory**: Remembers previous conversations for contextual interactions
+
+## 🆕 What's New
+
+- ✨ **NetworkX Knowledge Graph**: Build relationship networks between issues, users, and documentation
+- ✨ **Ollama Integration**: Run AI completely local with Llama 3.2, Mistral, or other models
+- ✨ **UV Package Manager**: Install dependencies 20x faster than pip
+- ✨ **Knowledge Graph API**: Query relationships, find paths, analyze network structure
+- ✨ **Flexible LLM Provider**: Switch between OpenAI and Ollama with a single config change
 
 ## 🏗️ Architecture
 
@@ -23,10 +34,14 @@ A security-first, agentic AI system that integrates with Jira and Confluence (re
 ┌────────▼────────┐
 │   FastAPI App   │
 ├─────────────────┤
-│  AI Agent       │ (LangChain + OpenAI)
+│  AI Agent       │ (LangChain + OpenAI/Ollama)
 │  ├─ Jira Tool   │
 │  ├─ Confluence  │
 │  └─ Analytics   │
+├─────────────────┤
+│ Knowledge Graph │ (NetworkX)
+│  ├─ Entities    │ (Issues, Users, Pages)
+│  └─ Relations   │ (assigned_to, documents)
 ├─────────────────┤
 │  SQLite DB      │ (Conversation History)
 └─────────────────┘
@@ -42,67 +57,118 @@ A security-first, agentic AI system that integrates with Jira and Confluence (re
 
 ### Prerequisites
 
-- Docker and Docker Compose (recommended)
-- OR Python 3.11+ (for local development)
+**Choose Your Setup:**
+
+**Option A: Fully Local (Recommended for Privacy)**
+- Python 3.11+
+- UV (optional but recommended)
+- Ollama (for local LLM)
+- Jira & Confluence access
+
+**Option B: Cloud LLM**
+- Python 3.11+
+- UV (optional but recommended)  
 - OpenAI API key
-- Jira account with API token
-- Confluence account with API token
+- Jira & Confluence access
 
-### Option 1: Docker Deployment (Recommended)
+**Option C: Docker**
+- Docker and Docker Compose
+- OpenAI API key OR Ollama
+- Jira & Confluence access
 
-1. **Clone the repository**
-   ```bash
-   git clone https://github.com/louisphilippebosse/jira-confluence-agentic-rl.git
-   cd jira-confluence-agentic-rl
-   ```
+### Option 1: Quick Setup with UV + Ollama (Fastest & Most Private)
 
-2. **Configure environment variables**
-   ```bash
-   cp .env.example .env
-   # Edit .env with your credentials
-   ```
+```bash
+# 1. Install UV (ultra-fast package manager)
+curl -LsSf https://astral.sh/uv/install.sh | sh
 
-3. **Build and run with Docker Compose**
-   ```bash
-   docker-compose up --build
-   ```
+# 2. Install Ollama (local LLM)
+# macOS: brew install ollama
+# Linux: curl -fsSL https://ollama.ai/install.sh | sh
+# Or visit: https://ollama.ai/download
 
-4. **Access the application**
-   - Open your browser to `http://localhost:8000`
-   - Start chatting with your AI assistant!
+# 3. Start Ollama and pull a model
+ollama serve  # In one terminal
+ollama pull llama3.2:latest  # In another terminal
 
-### Option 2: Local Development
+# 4. Clone and setup project
+git clone https://github.com/louisphilippebosse/jira-confluence-agentic-rl.git
+cd jira-confluence-agentic-rl
 
-1. **Clone and setup**
-   ```bash
-   git clone https://github.com/louisphilippebosse/jira-confluence-agentic-rl.git
-   cd jira-confluence-agentic-rl
-   ```
+# 5. Create virtual environment and install dependencies with UV (super fast!)
+uv venv
+source .venv/bin/activate  # On Windows: .venv\Scripts\activate
+uv pip install -r requirements.txt
 
-2. **Create virtual environment**
-   ```bash
-   python -m venv venv
-   source venv/bin/activate  # On Windows: venv\Scripts\activate
-   ```
+# 6. Configure environment
+cp .env.example .env
+# Edit .env - set LLM_PROVIDER=ollama and add your Jira/Confluence credentials
 
-3. **Install dependencies**
-   ```bash
-   pip install -r requirements.txt
-   ```
+# 7. Run the application
+uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
 
-4. **Configure environment**
-   ```bash
-   cp .env.example .env
-   # Edit .env with your credentials
-   ```
+# 8. Open browser to http://localhost:8000
+```
 
-5. **Run the application**
-   ```bash
-   uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
-   ```
+**Done! You now have a fully local, private AI assistant!** 🎉
 
-6. **Access the application**
-   - Open `http://localhost:8000`
+### Option 2: Setup with OpenAI
+
+```bash
+# 1. Install UV (optional but recommended)
+curl -LsSf https://astral.sh/uv/install.sh | sh
+
+# 2. Clone and setup
+git clone https://github.com/louisphilippebosse/jira-confluence-agentic-rl.git
+cd jira-confluence-agentic-rl
+
+# 3. Install dependencies
+uv venv && source .venv/bin/activate
+uv pip install -r requirements.txt
+
+# 4. Configure for OpenAI
+cp .env.example .env
+# Edit .env - set LLM_PROVIDER=openai and add your OpenAI API key
+
+# 5. Run
+uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
+```
+
+### Option 3: Docker Deployment
+
+```bash
+# 1. Clone and configure
+git clone https://github.com/louisphilippebosse/jira-confluence-agentic-rl.git
+cd jira-confluence-agentic-rl
+cp .env.example .env
+# Edit .env with your credentials
+
+# 2. Build and run
+docker-compose up --build
+
+# 3. Access at http://localhost:8000
+```
+
+### Option 4: Using Makefile
+
+```bash
+# Quick setup with UV
+make dev-uv
+
+# Or with pip
+make dev
+
+# Run the application
+make run
+```
+
+## 📖 Detailed Documentation
+
+- **[UV Guide](UV_GUIDE.md)** - Fast package installation with UV
+- **[Ollama Guide](OLLAMA_GUIDE.md)** - Local LLM setup and configuration
+- **[Knowledge Graph Guide](KNOWLEDGE_GRAPH.md)** - Understanding and using the knowledge graph
+- **[Security Policy](SECURITY.md)** - Security best practices
+- **[Contributing](CONTRIBUTING.md)** - How to contribute
 
 ## ⚙️ Configuration
 
@@ -111,7 +177,14 @@ A security-first, agentic AI system that integrates with Jira and Confluence (re
 Create a `.env` file based on `.env.example`:
 
 ```env
-# OpenAI Configuration
+# LLM Provider Selection (openai or ollama)
+LLM_PROVIDER=ollama
+
+# Ollama Configuration (for local LLM)
+OLLAMA_BASE_URL=http://localhost:11434
+OLLAMA_MODEL=llama3.2:latest
+
+# OpenAI Configuration (only if LLM_PROVIDER=openai)
 OPENAI_API_KEY=your_openai_api_key_here
 
 # Jira Configuration (Read-Only)
@@ -132,6 +205,10 @@ ENVIRONMENT=production
 # Security Settings
 ALLOWED_ORIGINS=http://localhost:8000,http://localhost:3000
 MAX_CONVERSATION_HISTORY=50
+
+# Knowledge Graph Configuration
+ENABLE_KNOWLEDGE_GRAPH=true
+KNOWLEDGE_GRAPH_PATH=./data/knowledge_graph.gpickle
 ```
 
 ### Getting API Tokens
@@ -188,14 +265,16 @@ MAX_CONVERSATION_HISTORY=50
 jira-confluence-agentic-rl/
 ├── app/
 │   ├── api/              # API endpoints
-│   │   └── chat.py       # Chat API
+│   │   ├── chat.py       # Chat API
+│   │   └── knowledge_graph.py  # Knowledge Graph API
 │   ├── models/           # Data models
 │   │   ├── database.py   # Database models
 │   │   └── schemas.py    # Pydantic schemas
 │   ├── services/         # Business logic
-│   │   ├── ai_agent_service.py    # AI agent
-│   │   ├── jira_service.py        # Jira integration
-│   │   └── confluence_service.py  # Confluence integration
+│   │   ├── ai_agent_service.py          # AI agent with RAG
+│   │   ├── jira_service.py              # Jira integration
+│   │   ├── confluence_service.py        # Confluence integration
+│   │   └── knowledge_graph_service.py   # NetworkX graph
 │   ├── static/           # Frontend assets
 │   │   ├── app.js        # Frontend logic
 │   │   └── style.css     # Styles
@@ -203,11 +282,18 @@ jira-confluence-agentic-rl/
 │   │   └── index.html    # Main UI
 │   ├── config.py         # Configuration
 │   └── main.py           # Application entry point
-├── data/                 # Database storage
+├── data/                 # Database & graph storage
 ├── Dockerfile            # Docker configuration
 ├── docker-compose.yml    # Docker Compose config
+├── pyproject.toml        # UV/pip configuration
 ├── requirements.txt      # Python dependencies
 ├── .env.example          # Example environment config
+├── Makefile             # Common commands
+├── UV_GUIDE.md          # UV package manager guide
+├── OLLAMA_GUIDE.md      # Ollama setup guide
+├── KNOWLEDGE_GRAPH.md   # Knowledge graph documentation
+├── SECURITY.md          # Security policy
+├── CONTRIBUTING.md      # Contributing guidelines
 └── README.md            # This file
 ```
 
@@ -271,11 +357,44 @@ Once running, access interactive API documentation at:
 
 ### Key Endpoints
 
+#### Chat & Conversation
 - `POST /api/chat` - Send a message to the AI
 - `GET /api/conversation/{session_id}` - Get conversation history
 - `GET /api/sessions` - List all sessions
 - `DELETE /api/conversation/{session_id}` - Delete a conversation
+
+#### Knowledge Graph  
+- `GET /api/kg/stats` - Get knowledge graph statistics
+- `GET /api/kg/entity/{entity_id}` - Get specific entity
+- `GET /api/kg/entity/{entity_id}/related` - Get related entities
+- `POST /api/kg/search` - Search entities
+- `GET /api/kg/central` - Get most central entities (PageRank)
+- `GET /api/kg/path/{source_id}/{target_id}` - Find shortest path
+
+#### System
 - `GET /health` - Health check
+- `GET /` - Web UI
+
+### Example API Usage
+
+```bash
+# Check health and configuration
+curl http://localhost:8000/health
+
+# Get knowledge graph stats
+curl http://localhost:8000/api/kg/stats
+
+# Get entity details
+curl http://localhost:8000/api/kg/entity/JIRA-123
+
+# Find relationships
+curl http://localhost:8000/api/kg/entity/JIRA-123/related
+
+# Chat with AI
+curl -X POST http://localhost:8000/api/chat \
+  -H "Content-Type: application/json" \
+  -d '{"message": "Show me open issues in project ABC"}'
+```
 
 ## 🤝 Contributing
 
