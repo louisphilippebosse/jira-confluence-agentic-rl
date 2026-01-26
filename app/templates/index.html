@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Jira-Confluence AI Assistant</title>
+    <link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>🤖 Delivery Intelligence Assistant</h1>
+            <p class="subtitle">AI-powered insights from Jira & Confluence</p>
+        </header>
+
+        <div class="main-content">
+            <div class="sidebar">
+                <h3>Conversations</h3>
+                <button id="new-chat-btn" class="new-chat-btn">+ New Chat</button>
+                <div id="sessions-list" class="sessions-list">
+                    <!-- Sessions will be loaded here -->
+                </div>
+            </div>
+
+            <div class="chat-container">
+                <div id="chat-messages" class="chat-messages">
+                    <div class="welcome-message">
+                        <h2>Welcome! 👋</h2>
+                        <p>I'm your AI assistant for delivery intelligence and decision support.</p>
+                        <p>I can help you with:</p>
+                        <ul>
+                            <li>📊 Analyze project delivery metrics and sprint progress</li>
+                            <li>🔍 Search Jira issues and Confluence documentation</li>
+                            <li>📈 Identify risks and provide recommendations</li>
+                            <li>💡 Answer questions about project status</li>
+                        </ul>
+                        <p><strong>Try asking:</strong></p>
+                        <ul>
+                            <li>"Show me open issues in project ABC"</li>
+                            <li>"What's the delivery status of our current sprint?"</li>
+                            <li>"Search for documentation about API integration"</li>
+                        </ul>
+                    </div>
+                </div>
+
+                <div class="input-container">
+                    <textarea 
+                        id="message-input" 
+                        placeholder="Ask me anything about your projects..."
+                        rows="1"
+                    ></textarea>
+                    <button id="send-btn" class="send-btn">
+                        <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
+                            <path d="M2 10L18 2L12 18L10 11L2 10Z" fill="currentColor"/>
+                        </svg>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="/static/app.js"></script>
+</body>
+</html>
