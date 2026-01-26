@@ -1,12 +1,19 @@
 from pydantic_settings import BaseSettings
-from typing import List
+from typing import List, Literal
 
 
 class Settings(BaseSettings):
     """Application settings with security-first approach"""
     
-    # OpenAI Configuration
-    openai_api_key: str
+    # OpenAI Configuration (optional)
+    openai_api_key: str = ""
+    
+    # Ollama Configuration (for local LLM)
+    ollama_base_url: str = "http://localhost:11434"
+    ollama_model: str = "llama3.2:latest"
+    
+    # LLM Provider Selection
+    llm_provider: Literal["openai", "ollama"] = "ollama"
     
     # Jira Configuration (Read-Only)
     jira_url: str
@@ -26,6 +33,10 @@ class Settings(BaseSettings):
     # Security Settings
     allowed_origins: str = "http://localhost:8000"
     max_conversation_history: int = 50
+    
+    # Knowledge Graph Configuration
+    enable_knowledge_graph: bool = True
+    knowledge_graph_path: str = "./data/knowledge_graph.gpickle"
     
     @property
     def allowed_origins_list(self) -> List[str]:

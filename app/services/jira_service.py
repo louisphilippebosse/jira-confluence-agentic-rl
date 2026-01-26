@@ -10,15 +10,23 @@ class JiraService:
     """Read-only Jira integration service"""
     
     def __init__(self):
-        try:
-            self.client = JIRA(
-                server=settings.jira_url,
-                basic_auth=(settings.jira_username, settings.jira_api_token)
-            )
-            logger.info("Jira client initialized successfully")
-        except Exception as e:
-            logger.error(f"Failed to initialize Jira client: {e}")
-            self.client = None
+        self._client = None
+    
+    @property
+    def client(self):
+        """Lazy initialization of Jira client"""
+        if self._client is None:
+            try:
+                self._client = JIRA(
+                    server=settings.jira_url,
+                    basic_auth=(settings.jira_username, settings.jira_api_token),
+                    timeout=5
+                )
+                logger.info("Jira client initialized successfully")
+            except Exception as e:
+                logger.warning(f"Failed to initialize Jira client: {e}")
+                self._client = False  # Mark as failed
+        return self._client if self._client is not False else None
     
     def search_issues(self, jql: str, max_results: int = 50) -> List[Dict[str, Any]]:
         """Search Jira issues using JQL (read-only)"""

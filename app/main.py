@@ -7,7 +7,7 @@ import logging
 
 from app.config import settings
 from app.models.database import init_db
-from app.api import chat
+from app.api import chat, knowledge_graph
 
 # Configure logging
 logging.basicConfig(
@@ -19,7 +19,7 @@ logger = logging.getLogger(__name__)
 # Initialize FastAPI app
 app = FastAPI(
     title="Jira-Confluence Agentic AI",
-    description="Security-first AI system for delivery intelligence and decision support",
+    description="Security-first AI system for delivery intelligence with Knowledge Graph RAG",
     version="1.0.0"
 )
 
@@ -40,12 +40,17 @@ templates = Jinja2Templates(directory="app/templates")
 
 # Include API routers
 app.include_router(chat.router, prefix="/api", tags=["chat"])
+app.include_router(knowledge_graph.router, prefix="/api/kg", tags=["knowledge-graph"])
 
 
 @app.on_event("startup")
 async def startup_event():
     """Initialize database on startup"""
     logger.info("Starting application...")
+    logger.info(f"LLM Provider: {settings.llm_provider}")
+    if settings.llm_provider == "ollama":
+        logger.info(f"Ollama URL: {settings.ollama_base_url}, Model: {settings.ollama_model}")
+    logger.info(f"Knowledge Graph: {'Enabled' if settings.enable_knowledge_graph else 'Disabled'}")
     init_db()
     logger.info("Database initialized")
 
@@ -61,7 +66,9 @@ async def health_check():
     """Health check endpoint"""
     return {
         "status": "healthy",
-        "environment": settings.environment
+        "environment": settings.environment,
+        "llm_provider": settings.llm_provider,
+        "knowledge_graph_enabled": settings.enable_knowledge_graph
     }
 
 

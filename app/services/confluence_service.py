@@ -10,16 +10,24 @@ class ConfluenceService:
     """Read-only Confluence integration service"""
     
     def __init__(self):
-        try:
-            self.client = Confluence(
-                url=settings.confluence_url,
-                username=settings.confluence_username,
-                password=settings.confluence_api_token
-            )
-            logger.info("Confluence client initialized successfully")
-        except Exception as e:
-            logger.error(f"Failed to initialize Confluence client: {e}")
-            self.client = None
+        self._client = None
+    
+    @property
+    def client(self):
+        """Lazy initialization of Confluence client"""
+        if self._client is None:
+            try:
+                self._client = Confluence(
+                    url=settings.confluence_url,
+                    username=settings.confluence_username,
+                    password=settings.confluence_api_token,
+                    timeout=5
+                )
+                logger.info("Confluence client initialized successfully")
+            except Exception as e:
+                logger.warning(f"Failed to initialize Confluence client: {e}")
+                self._client = False  # Mark as failed
+        return self._client if self._client is not False else None
     
     def search_content(self, query: str, limit: int = 25) -> List[Dict[str, Any]]:
         """Search Confluence content (read-only)"""

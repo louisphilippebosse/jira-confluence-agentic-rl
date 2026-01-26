@@ -1,0 +1,66 @@
+[project]
+name = "jira-confluence-agentic-rl"
+version = "1.0.0"
+description = "Security-first AI system for delivery intelligence with knowledge graph RAG"
+readme = "README.md"
+requires-python = ">=3.11"
+license = { text = "MIT" }
+authors = [
+    { name = "Louis Philippe Bosse" }
+]
+
+dependencies = [
+    # Core Framework
+    "fastapi>=0.104.0",
+    "uvicorn[standard]>=0.24.0",
+    "pydantic>=2.5.0",
+    "pydantic-settings>=2.1.0",
+    
+    # AI/LLM - OpenAI & Ollama
+    "openai>=1.3.0",
+    "langchain>=0.1.0",
+    "langchain-openai>=0.0.5",
+    "langchain-ollama>=0.0.1",
+    "langchain-community>=0.0.10",
+    
+    # Knowledge Graph & RAG
+    "networkx>=3.2",
+    "numpy>=1.26.0",
+    "scipy>=1.11.0",
+    
+    # Jira & Confluence Integration
+    "jira>=3.5.0",
+    "atlassian-python-api>=3.41.0",
+    
+    # Database & Storage
+    "sqlalchemy>=2.0.0",
+    "aiosqlite>=0.19.0",
+    
+    # Security
+    "python-dotenv>=1.0.0",
+    "cryptography>=41.0.0",
+    
+    # Utilities
+    "httpx>=0.25.0",
+    "python-multipart>=0.0.6",
+    "requests>=2.31.0",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=7.4.0",
+    "black>=23.0.0",
+    "flake8>=6.1.0",
+    "mypy>=1.7.0",
+]
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.uv]
+dev-dependencies = [
+    "pytest>=7.4.0",
+    "black>=23.0.0",
+    "flake8>=6.1.0",
+]
