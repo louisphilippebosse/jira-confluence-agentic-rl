@@ -100,3 +100,58 @@ async def find_path(source_id: str, target_id: str):
     except Exception as e:
         logger.error(f"Error finding path: {e}")
         raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.get("/export")
+async def export_graph_for_visualization():
+    """Export the entire knowledge graph in a format suitable for frontend visualization"""
+    try:
+        if not knowledge_graph_service.enabled:
+            return {
+                "nodes": [],
+                "edges": [],
+                "stats": {"enabled": False, "message": "Knowledge graph is disabled"}
+            }
+        
+        graph = knowledge_graph_service.graph
+        
+        # Build nodes array
+        nodes = []
+        for node_id, node_data in graph.nodes(data=True):
+            entity_type = node_data.get('entity_type', 'unknown')
+            properties = node_data.get('properties', {})
+            
+            nodes.append({
+                "id": node_id,
+                "label": node_id,
+                "type": entity_type,
+                "properties": properties,
+                "title": properties.get('summary') or properties.get('title') or node_id,
+                "updated_at": node_data.get('updated_at')
+            })
+        
+        # Build edges array
+        edges = []
+        for source, target, edge_data in graph.edges(data=True):
+            edges.append({
+                "source": source,
+                "target": target,
+                "relationship": edge_data.get('relationship_type', 'related'),
+                "properties": edge_data.get('properties', {}),
+                "created_at": edge_data.get('created_at')
+            })
+        
+        # Get stats
+        stats = knowledge_graph_service.get_graph_stats()
+        
+        logger.info(f"📤 Exported graph: {len(nodes)} nodes, {len(edges)} edges")
+        
+        return {
+            "nodes": nodes,
+            "edges": edges,
+            "stats": stats
+        }
+        
+    except Exception as e:
+        logger.error(f"Error exporting graph: {e}")
+        raise HTTPException(status_code=500, detail=str(e))

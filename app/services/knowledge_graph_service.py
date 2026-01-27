@@ -53,7 +53,7 @@ class KnowledgeGraphService:
         except Exception as e:
             logger.error(f"Error saving knowledge graph: {e}")
     
-    def add_entity(self, entity_id: str, entity_type: str, properties: Dict[str, Any]):
+    def add_entity(self, entity_id: str, entity_type: str, properties: Dict[str, Any], auto_save: bool = False):
         """Add or update an entity in the knowledge graph"""
         if not self.enabled:
             return
@@ -64,9 +64,10 @@ class KnowledgeGraphService:
             properties=properties,
             updated_at=datetime.utcnow().isoformat()
         )
-        self._save_graph()
+        if auto_save:
+            self._save_graph()
     
-    def add_relationship(self, source_id: str, target_id: str, relationship_type: str, properties: Optional[Dict] = None):
+    def add_relationship(self, source_id: str, target_id: str, relationship_type: str, properties: Optional[Dict] = None, auto_save: bool = False):
         """Add a relationship between two entities"""
         if not self.enabled:
             return
@@ -78,10 +79,11 @@ class KnowledgeGraphService:
             properties=properties or {},
             created_at=datetime.utcnow().isoformat()
         )
-        self._save_graph()
+        if auto_save:
+            self._save_graph()
     
     def add_jira_issue(self, issue_data: Dict[str, Any]):
-        """Add a Jira issue to the knowledge graph"""
+        """Add a Jira issue to the knowledge graph with enhanced metadata extraction"""
         if not self.enabled:
             return
         
@@ -89,32 +91,116 @@ class KnowledgeGraphService:
         if not issue_key:
             return
         
+        # Extract project key (e.g., "ACTHUB" from "ACTHUB-9")
+        project_key = issue_key.split('-')[0] if '-' in issue_key else None
+        
+        # Extract comprehensive metadata
+        properties = {
+            "summary": issue_data.get("summary"),
+            "status": issue_data.get("status"),
+            "priority": issue_data.get("priority"),
+            "assignee": issue_data.get("assignee"),
+            "reporter": issue_data.get("reporter"),
+            "created": issue_data.get("created"),
+            "updated": issue_data.get("updated"),
+            "issue_type": issue_data.get("issue_type"),
+            "description": issue_data.get("description", "")[:500],  # First 500 chars
+            "labels": issue_data.get("labels", []),
+            "components": issue_data.get("components", []),
+            "fix_versions": issue_data.get("fix_versions", []),
+            "parent": issue_data.get("parent"),  # For subtasks
+            "epic_key": issue_data.get("epic_key"),  # Link to Epic
+            "project_key": project_key,
+            "has_subtasks": issue_data.get("has_subtasks", False),
+        }
+        
         # Add issue node
         self.add_entity(
             entity_id=issue_key,
             entity_type="jira_issue",
-            properties={
-                "summary": issue_data.get("summary"),
-                "status": issue_data.get("status"),
-                "priority": issue_data.get("priority"),
-                "assignee": issue_data.get("assignee"),
-                "created": issue_data.get("created"),
-                "updated": issue_data.get("updated"),
-            }
+            properties=properties
         )
         
-        # Add relationships to assignee
-        if issue_data.get("assignee"):
-            assignee = issue_data["assignee"]
+        # Add Project entity and relationship
+        if project_key:
+            project_id = f"project:{project_key}"
+            self.add_entity(
+                entity_id=project_id,
+                entity_type="project",
+                properties={"key": project_key, "name": project_key}
+            )
+            self.add_relationship(issue_key, project_id, "belongs_to_project")
+        
+        # Add relationships
+        assignee = issue_data.get("assignee")
+        if assignee and assignee != "Unassigned":
             self.add_entity(
                 entity_id=f"user:{assignee}",
                 entity_type="user",
                 properties={"name": assignee}
             )
             self.add_relationship(issue_key, f"user:{assignee}", "assigned_to")
+        
+        # Add reporter relationship
+        reporter = issue_data.get("reporter")
+        if reporter:
+            self.add_entity(
+                entity_id=f"user:{reporter}",
+                entity_type="user",
+                properties={"name": reporter}
+            )
+            self.add_relationship(issue_key, f"user:{reporter}", "reported_by")
+        
+        # Link to parent issue if exists (for subtasks)
+        parent_key = issue_data.get("parent")
+        if parent_key:
+            self.add_relationship(issue_key, parent_key, "child_of")
+            # Also add reverse relationship
+            self.add_relationship(parent_key, issue_key, "has_child")
+        
+        # Link to Epic if exists
+        epic_key = issue_data.get("epic_key")
+        if epic_key and epic_key != issue_key:  # Avoid self-reference
+            # Ensure epic exists as an entity
+            self.add_entity(
+                entity_id=epic_key,
+                entity_type="jira_issue",
+                properties={"summary": f"Epic {epic_key}", "issue_type": "Epic"}
+            )
+            self.add_relationship(issue_key, epic_key, "belongs_to_epic")
+            # Add reverse relationship
+            self.add_relationship(epic_key, issue_key, "contains_issue")
+        
+        # Add subtasks if present
+        subtasks = issue_data.get("subtasks", [])
+        for subtask in subtasks:
+            subtask_key = subtask.get("key")
+            if subtask_key:
+                self.add_relationship(issue_key, subtask_key, "has_child")
+                self.add_relationship(subtask_key, issue_key, "child_of")
+        
+        # Link to components
+        for component in issue_data.get("components", []):
+            component_id = f"component:{component}"
+            self.add_entity(
+                entity_id=component_id,
+                entity_type="component",
+                properties={"name": component}
+            )
+            self.add_relationship(issue_key, component_id, "has_component")
+        
+        # Link to labels
+        for label in issue_data.get("labels", []):
+            label_id = f"label:{label}"
+            self.add_entity(
+                entity_id=label_id,
+                entity_type="label",
+                properties={"name": label}
+            )
+            self.add_relationship(issue_key, label_id, "has_label")
     
     def add_confluence_page(self, page_data: Dict[str, Any]):
-        """Add a Confluence page to the knowledge graph"""
+        """Add a Confluence page to the knowledge graph with enhanced metadata"""
         if not self.enabled:
             return
         
@@ -122,16 +208,46 @@ class KnowledgeGraphService:
         if not page_id:
             return
         
+        # Extract comprehensive metadata
+        properties = {
+            "title": page_data.get("title"),
+            "space": page_data.get("space"),
+            "type": page_data.get("type"),
+            "content_excerpt": page_data.get("content", "")[:500],  # First 500 chars
+            "created": page_data.get("created"),
+            "updated": page_data.get("updated"),
+            "author": page_data.get("author"),
+            "labels": page_data.get("labels", []),
+        }
+        
         # Add page node
         self.add_entity(
             entity_id=f"confluence:{page_id}",
             entity_type="confluence_page",
-            properties={
-                "title": page_data.get("title"),
-                "space": page_data.get("space"),
-                "type": page_data.get("type"),
-            }
+            properties=properties
         )
+        
+        # Link to author
+        author = page_data.get("author")
+        if author:
+            self.add_entity(
+                entity_id=f"user:{author}",
+                entity_type="user",
+                properties={"name": author}
+            )
+            self.add_relationship(f"confluence:{page_id}", f"user:{author}", "authored_by")
+        
+        # Link to space
+        space = page_data.get("space")
+        space_name = page_data.get("space_name", space)
+        if space:
+            space_id = f"space:{space}"
+            self.add_entity(
+                entity_id=space_id,
+                entity_type="confluence_space",
+                properties={"key": space, "name": space_name}
+            )
+            self.add_relationship(f"confluence:{page_id}", space_id, "in_space")
     
     def get_entity(self, entity_id: str) -> Optional[Dict[str, Any]]:
         """Get an entity from the knowledge graph"""
@@ -235,6 +351,217 @@ class KnowledgeGraphService:
         except Exception as e:
             logger.error(f"Error calculating PageRank: {e}")
             return []
+    
+    def bulk_populate_jira_issues(self, issues: List[Dict[str, Any]]) -> int:
+        """Bulk populate knowledge graph with Jira issues - NO AUTO-SAVE"""
+        if not self.enabled:
+            return 0
+        
+        count = 0
+        
+        # Temporarily disable auto-save during bulk load
+        orig_enabled_state = self.enabled
+        
+        for issue in issues:
+            try:
+                self.add_jira_issue(issue)
+                count += 1
+            except Exception as e:
+                logger.error(f"Error adding issue {issue.get('key', 'unknown')}: {e}")
+        
+        # Save once at the end of the batch
+        self._save_graph()
+        
+        return count
+    
+    def bulk_populate_confluence_pages(self, pages: List[Dict[str, Any]]) -> int:
+        """Bulk populate knowledge graph with Confluence pages"""
+        if not self.enabled:
+            return 0
+        
+        count = 0
+        logger.info(f"📊 Starting bulk population of {len(pages)} Confluence pages...")
+        
+        for page in pages:
+            try:
+                self.add_confluence_page(page)
+                count += 1
+                if count % 10 == 0:
+                    logger.info(f"  Processed {count}/{len(pages)} pages...")
+            except Exception as e:
+                logger.error(f"Error adding page {page.get('id', 'unknown')}: {e}")
+        
+        logger.info(f"✅ Bulk population complete: {count} pages added")
+        return count
+    
+    def populate_from_services(self) -> Dict[str, int]:
+        """Populate knowledge graph from ALL Jira projects and Confluence
+        
+        Returns:
+            Dict with counts of issues, pages, and projects added
+        """
+        if not self.enabled:
+            return {"jira_issues": 0, "confluence_pages": 0, "projects": 0}
+        
+        # Import here to avoid circular dependency
+        from app.services.jira_service import jira_service
+        from app.services.confluence_service import confluence_service
+        
+        results = {"jira_issues": 0, "confluence_pages": 0, "projects": 0}
+        projects = set()
+        
+        # Populate ALL Jira issues across ALL projects (no limits)
+        logger.info("🔍 Fetching ALL Jira issues from ALL projects...")
+        print("🔍 Fetching ALL Jira issues from ALL projects...", flush=True)
+        try:
+            # First, get all projects
+            if jira_service.client:
+                all_projects = jira_service.client.projects()
+                project_keys = [p.key for p in all_projects]
+                logger.info(f"📦 Found {len(project_keys)} projects: {', '.join(project_keys)}")
+                print(f"📦 Found {len(project_keys)} projects: {', '.join(project_keys)}", flush=True)
+                
+                # Iterate through each project
+                for project_key in project_keys:
+                    logger.info(f"\n📂 Loading all issues from project {project_key}...")
+                    print(f"\n📂 Loading all issues from project {project_key}...", flush=True)
+                    batch_size = 100
+                    start_at = 0
+                    project_issues = 0
+                    
+                    # Build JQL for this project only (required by Jira Cloud)
+                    jql = f"project = {project_key} ORDER BY key ASC"
+                    
+                    while True:
+                        logger.info(f"  Fetching issues {start_at} to {start_at + batch_size}...")
+                        print(f"  Fetching batch starting at {start_at}...", end='', flush=True)
+                        
+                        # Use the search API
+                        try:
+                            issues = jira_service.client.search_issues(
+                                jql, 
+                                startAt=start_at, 
+                                maxResults=batch_size,
+                                fields='*all'
+                            )
+                            print(f" got {len(issues)} issues", flush=True)
+                        except Exception as e:
+                            logger.warning(f"search_issues failed for {project_key}: {e}")
+                            print(f" ERROR: {e}", flush=True)
+                            issues = []
+                        
+                        if not issues:
+                            break
+                        
+                        # Convert to dict format
+                        batch_issues = []
+                        for issue in issues:
+                            # Extract epic link
+                            epic_key = None
+                            if hasattr(issue.fields, 'customfield_10014'):
+                                epic_key = issue.fields.customfield_10014
+                            elif hasattr(issue.fields, 'parent') and issue.fields.parent:
+                                if hasattr(issue.fields.parent.fields, 'issuetype'):
+                                    if issue.fields.parent.fields.issuetype.name == 'Epic':
+                                        epic_key = issue.fields.parent.key
+                            
+                            # Extract parent key
+                            parent_key = None
+                            if hasattr(issue.fields, 'parent') and issue.fields.parent:
+                                parent_key = issue.fields.parent.key
+                            
+                            # Extract subtasks
+                            subtasks = []
+                            if hasattr(issue.fields, 'subtasks') and issue.fields.subtasks:
+                                for subtask in issue.fields.subtasks:
+                                    subtasks.append({
+                                        "key": subtask.key,
+                                        "summary": subtask.fields.summary,
+                                        "status": subtask.fields.status.name
+                                    })
+                            
+                            # Track project
+                            proj_key = issue.key.split('-')[0]
+                            projects.add(proj_key)
+                            
+                            batch_issues.append({
+                                "key": issue.key,
+                                "summary": issue.fields.summary,
+                                "status": issue.fields.status.name,
+                                "assignee": issue.fields.assignee.displayName if issue.fields.assignee else "Unassigned",
+                                "reporter": issue.fields.reporter.displayName if issue.fields.reporter else "Unknown",
+                                "created": str(issue.fields.created),
+                                "updated": str(issue.fields.updated),
+                                "priority": issue.fields.priority.name if issue.fields.priority else "None",
+                                "issue_type": issue.fields.issuetype.name if issue.fields.issuetype else "Unknown",
+                                "description": issue.fields.description if issue.fields.description else "",
+                                "labels": issue.fields.labels if hasattr(issue.fields, 'labels') else [],
+                                "components": [c.name for c in issue.fields.components] if hasattr(issue.fields, 'components') else [],
+                                "parent": parent_key,
+                                "epic_key": epic_key,
+                                "subtasks": subtasks,
+                                "has_subtasks": len(subtasks) > 0
+                            })
+                        
+                        # Add batch to knowledge graph
+                        if batch_issues:
+                            count = self.bulk_populate_jira_issues(batch_issues)
+                            project_issues += count
+                            results["jira_issues"] += count
+                            print(f"    ✓ Processed {count} issues (total: {project_issues})", flush=True)
+                        
+                        # Check if we got fewer results than batch size (last batch)
+                        if len(issues) < batch_size:
+                            break
+                        
+                        start_at += batch_size
+                
+                logger.info(f"  ✅ Loaded {project_issues} issues from {project_key}")
+                print(f"  ✅ Loaded {project_issues} issues from {project_key}\n", flush=True)
+            else:
+                logger.error("Jira client not available")
+            
+            results["projects"] = len(projects)
+            logger.info(f"✅ Loaded {results['jira_issues']} issues from {len(projects)} projects: {', '.join(sorted(projects))}")
+            
+        except Exception as e:
+            logger.error(f"Error fetching Jira issues: {e}", exc_info=True)
+        
+        # Populate Confluence pages from ALL spaces
+        logger.info("\n🔍 Fetching ALL Confluence pages from ALL spaces...")
+        print("\n🔍 Fetching ALL Confluence pages from ALL spaces...", flush=True)
+        try:
+            confluence_pages = confluence_service.get_all_pages(limit=1000)
+            if confluence_pages:
+                logger.info(f"📄 Processing {len(confluence_pages)} Confluence pages...")
+                print(f"📄 Processing {len(confluence_pages)} Confluence pages...", flush=True)
+                results["confluence_pages"] = self.bulk_populate_confluence_pages(confluence_pages)
+                logger.info(f"  ✅ Loaded {results['confluence_pages']} Confluence pages")
+                print(f"  ✅ Loaded {results['confluence_pages']} Confluence pages\n", flush=True)
+            else:
+                logger.warning("No Confluence pages found")
+                print("  ⚠️ No Confluence pages found", flush=True)
+        except Exception as e:
+            logger.error(f"Error fetching Confluence pages: {e}", exc_info=True)
+            print(f"  ⚠️ Error loading Confluence: {e}", flush=True)
+        
+        # Final save of the complete graph
+        print("\n💾 Saving knowledge graph to disk...", flush=True)
+        self._save_graph()
+        print("✅ Knowledge graph saved!\n", flush=True)
+        
+        logger.info(f"✅ Knowledge graph populated: {results}")
+        return results
+    
+    def clear_graph(self):
+        """Clear all data from the knowledge graph"""
+        if not self.enabled:
+            return
+        
+        logger.warning("🗑️ Clearing knowledge graph...")
+        self.graph = nx.DiGraph()
+        self._save_graph()
+        logger.info("✅ Knowledge graph cleared")
 
 
 knowledge_graph_service = KnowledgeGraphService()

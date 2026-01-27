@@ -9,8 +9,17 @@
 <body>
     <div class="container">
         <header>
-            <h1>🤖 Delivery Intelligence Assistant</h1>
-            <p class="subtitle">AI-powered insights from Jira & Confluence</p>
+            <div style="display: flex; justify-content: space-between; align-items: center;">
+                <div>
+                    <h1>🤖 Delivery Intelligence Assistant</h1>
+                    <p class="subtitle">AI-powered insights from Jira & Confluence</p>
+                </div>
+                <nav style="display: flex; gap: 1rem; align-items: center;">
+                    <a href="/graph" style="color: white; text-decoration: none; background: rgba(255,255,255,0.2); padding: 0.5rem 1rem; border-radius: 4px; font-size: 0.9rem;" title="View Knowledge Graph">
+                        🕸️ Knowledge Graph
+                    </a>
+                </nav>
+            </div>
         </header>
 
         <div class="main-content">
@@ -59,6 +68,8 @@
         </div>
     </div>
 
+    <!-- Markdown parser for rendering formatted messages -->
+    <script src="https://cdn.jsdelivr.net/npm/marked@11.1.1/marked.min.js"></script>
     <script src="/static/app.js"></script>
 </body>
 </html>

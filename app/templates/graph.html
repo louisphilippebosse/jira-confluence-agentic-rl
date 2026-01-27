@@ -1,0 +1,463 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Knowledge Graph - Jira-Confluence AI</title>
+    <link rel="stylesheet" href="/static/style.css">
+    <script src="https://unpkg.com/cytoscape@3.28.1/dist/cytoscape.min.js"></script>
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            font-family: system-ui, -apple-system, sans-serif;
+        }
+        
+        #header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 1rem 2rem;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        
+        #header h1 {
+            margin: 0;
+            font-size: 1.5rem;
+        }
+        
+        #header nav {
+            margin-top: 0.5rem;
+        }
+        
+        #header nav a {
+            color: white;
+            text-decoration: none;
+            margin-right: 1rem;
+            opacity: 0.9;
+        }
+        
+        #header nav a:hover {
+            opacity: 1;
+            text-decoration: underline;
+        }
+        
+        #controls {
+            background: #f8f9fa;
+            padding: 1rem 2rem;
+            border-bottom: 1px solid #dee2e6;
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            flex-wrap: wrap;
+        }
+        
+        #controls button {
+            padding: 0.5rem 1rem;
+            background: #667eea;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 0.9rem;
+        }
+        
+        #controls button:hover {
+            background: #5568d3;
+        }
+        
+        #controls select, #controls input {
+            padding: 0.5rem;
+            border: 1px solid #ced4da;
+            border-radius: 4px;
+            font-size: 0.9rem;
+        }
+        
+        #stats {
+            background: #e7f3ff;
+            padding: 1rem 2rem;
+            border-bottom: 1px solid #b3d9ff;
+            display: flex;
+            gap: 2rem;
+            font-size: 0.9rem;
+        }
+        
+        #stats .stat {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+        
+        #stats .stat-value {
+            font-weight: bold;
+            color: #0066cc;
+        }
+        
+        #cy {
+            width: 100%;
+            height: calc(100vh - 200px);
+            background: #f8f9fa;
+        }
+        
+        #legend {
+            position: absolute;
+            bottom: 20px;
+            right: 20px;
+            background: white;
+            padding: 1rem;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            font-size: 0.85rem;
+        }
+        
+        #legend h3 {
+            margin-top: 0;
+            font-size: 0.9rem;
+        }
+        
+        #legend .legend-item {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            margin: 0.3rem 0;
+        }
+        
+        #legend .legend-color {
+            width: 16px;
+            height: 16px;
+            border-radius: 50%;
+        }
+        
+        #node-info {
+            position: absolute;
+            top: 200px;
+            left: 20px;
+            background: white;
+            padding: 1rem;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            max-width: 300px;
+            display: none;
+        }
+        
+        #node-info h3 {
+            margin-top: 0;
+            font-size: 1rem;
+            color: #667eea;
+        }
+        
+        #node-info .info-row {
+            margin: 0.5rem 0;
+            font-size: 0.85rem;
+        }
+        
+        #node-info .info-label {
+            font-weight: bold;
+            color: #666;
+        }
+    </style>
+</head>
+<body>
+    <div id="header">
+        <h1>🕸️ Knowledge Graph Visualization</h1>
+        <nav>
+            <a href="/">← Back to Chat</a>
+            <a href="#" id="refresh-btn">🔄 Refresh</a>
+        </nav>
+    </div>
+    
+    <div id="stats">
+        <div class="stat">
+            <span>Total Nodes:</span>
+            <span class="stat-value" id="node-count">0</span>
+        </div>
+        <div class="stat">
+            <span>Total Edges:</span>
+            <span class="stat-value" id="edge-count">0</span>
+        </div>
+        <div class="stat">
+            <span>Jira Issues:</span>
+            <span class="stat-value" id="jira-count">0</span>
+        </div>
+        <div class="stat">
+            <span>Confluence Pages:</span>
+            <span class="stat-value" id="confluence-count">0</span>
+        </div>
+        <div class="stat">
+            <span>Users:</span>
+            <span class="stat-value" id="user-count">0</span>
+        </div>
+    </div>
+    
+    <div id="controls">
+        <button id="fit-btn">📐 Fit to Screen</button>
+        <button id="reset-zoom-btn">🔍 Reset Zoom</button>
+        <select id="layout-select">
+            <option value="cose">Force-Directed (COSE)</option>
+            <option value="circle">Circle</option>
+            <option value="grid">Grid</option>
+            <option value="concentric">Concentric</option>
+            <option value="breadthfirst">Breadth-First</option>
+        </select>
+        <select id="filter-type">
+            <option value="">All Types</option>
+            <option value="jira_issue">Jira Issues</option>
+            <option value="confluence_page">Confluence Pages</option>
+            <option value="user">Users</option>
+        </select>
+        <input type="search" id="search-input" placeholder="Search nodes...">
+    </div>
+    
+    <div style="position: relative;">
+        <div id="cy"></div>
+        
+        <div id="legend">
+            <h3>Legend</h3>
+            <div class="legend-item">
+                <div class="legend-color" style="background: #0052CC;"></div>
+                <span>Jira Issue</span>
+            </div>
+            <div class="legend-item">
+                <div class="legend-color" style="background: #172B4D;"></div>
+                <span>Confluence Page</span>
+            </div>
+            <div class="legend-item">
+                <div class="legend-color" style="background: #00C853;"></div>
+                <span>User</span>
+            </div>
+            <div class="legend-item">
+                <div class="legend-color" style="background: #999999;"></div>
+                <span>Unknown</span>
+            </div>
+        </div>
+        
+        <div id="node-info">
+            <h3 id="node-title">Node Details</h3>
+            <div id="node-details"></div>
+        </div>
+    </div>
+    
+    <script>
+        let cy;
+        let graphData = { nodes: [], edges: [] };
+        
+        // Color map for node types
+        const colorMap = {
+            'jira_issue': '#0052CC',
+            'confluence_page': '#172B4D',
+            'user': '#00C853',
+            'unknown': '#999999'
+        };
+        
+        // Load graph data from API
+        async function loadGraph() {
+            try {
+                const response = await fetch('/api/kg/export');
+                const data = await response.json();
+                graphData = data;
+                
+                updateStats(data.stats);
+                renderGraph(data.nodes, data.edges);
+            } catch (error) {
+                console.error('Error loading graph:', error);
+                alert('Failed to load knowledge graph');
+            }
+        }
+        
+        // Update statistics
+        function updateStats(stats) {
+            document.getElementById('node-count').textContent = stats.total_nodes || 0;
+            document.getElementById('edge-count').textContent = stats.total_edges || 0;
+            document.getElementById('jira-count').textContent = stats.entity_types?.jira_issue || 0;
+            document.getElementById('confluence-count').textContent = stats.entity_types?.confluence_page || 0;
+            document.getElementById('user-count').textContent = stats.entity_types?.user || 0;
+        }
+        
+        // Render graph using Cytoscape
+        function renderGraph(nodes, edges, filterType = '') {
+            // Filter nodes if needed
+            let filteredNodes = nodes;
+            let filteredEdges = edges;
+            
+            if (filterType) {
+                filteredNodes = nodes.filter(n => n.type === filterType);
+                const nodeIds = new Set(filteredNodes.map(n => n.id));
+                filteredEdges = edges.filter(e => nodeIds.has(e.source) && nodeIds.has(e.target));
+            }
+            
+            // Convert to Cytoscape format
+            const elements = [
+                ...filteredNodes.map(node => ({
+                    data: {
+                        id: node.id,
+                        label: node.label,
+                        type: node.type,
+                        properties: node.properties,
+                        title: node.title,
+                        color: colorMap[node.type] || colorMap['unknown']
+                    }
+                })),
+                ...filteredEdges.map(edge => ({
+                    data: {
+                        id: `${edge.source}-${edge.target}`,
+                        source: edge.source,
+                        target: edge.target,
+                        label: edge.relationship
+                    }
+                }))
+            ];
+            
+            // Initialize or update Cytoscape
+            if (cy) {
+                cy.destroy();
+            }
+            
+            cy = cytoscape({
+                container: document.getElementById('cy'),
+                elements: elements,
+                style: [
+                    {
+                        selector: 'node',
+                        style: {
+                            'background-color': 'data(color)',
+                            'label': 'data(label)',
+                            'text-valign': 'center',
+                            'text-halign': 'center',
+                            'font-size': '12px',
+                            'color': '#fff',
+                            'text-outline-width': 2,
+                            'text-outline-color': 'data(color)',
+                            'width': 40,
+                            'height': 40
+                        }
+                    },
+                    {
+                        selector: 'edge',
+                        style: {
+                            'width': 2,
+                            'line-color': '#ccc',
+                            'target-arrow-color': '#ccc',
+                            'target-arrow-shape': 'triangle',
+                            'curve-style': 'bezier',
+                            'label': 'data(label)',
+                            'font-size': '10px',
+                            'text-rotation': 'autorotate',
+                            'text-margin-y': -10
+                        }
+                    },
+                    {
+                        selector: ':selected',
+                        style: {
+                            'border-width': 3,
+                            'border-color': '#FFD700'
+                        }
+                    }
+                ],
+                layout: {
+                    name: 'cose',
+                    animate: true,
+                    animationDuration: 500,
+                    nodeRepulsion: 8000,
+                    idealEdgeLength: 100
+                }
+            });
+            
+            // Node click event
+            cy.on('tap', 'node', function(evt) {
+                const node = evt.target;
+                showNodeInfo(node.data());
+            });
+            
+            // Background click event
+            cy.on('tap', function(evt) {
+                if (evt.target === cy) {
+                    hideNodeInfo();
+                }
+            });
+        }
+        
+        // Show node information panel
+        function showNodeInfo(nodeData) {
+            const infoPanel = document.getElementById('node-info');
+            const title = document.getElementById('node-title');
+            const details = document.getElementById('node-details');
+            
+            title.textContent = nodeData.title || nodeData.label;
+            
+            let html = `
+                <div class="info-row">
+                    <span class="info-label">ID:</span> ${nodeData.id}
+                </div>
+                <div class="info-row">
+                    <span class="info-label">Type:</span> ${nodeData.type}
+                </div>
+            `;
+            
+            if (nodeData.properties) {
+                for (const [key, value] of Object.entries(nodeData.properties)) {
+                    if (value) {
+                        html += `
+                            <div class="info-row">
+                                <span class="info-label">${key}:</span> ${value}
+                            </div>
+                        `;
+                    }
+                }
+            }
+            
+            details.innerHTML = html;
+            infoPanel.style.display = 'block';
+        }
+        
+        // Hide node information panel
+        function hideNodeInfo() {
+            document.getElementById('node-info').style.display = 'none';
+        }
+        
+        // Change layout
+        function changeLayout(layoutName) {
+            if (cy) {
+                cy.layout({ name: layoutName, animate: true }).run();
+            }
+        }
+        
+        // Search nodes
+        function searchNodes(query) {
+            if (!cy) return;
+            
+            cy.nodes().removeClass('highlighted');
+            
+            if (!query) return;
+            
+            const results = cy.nodes().filter(node => {
+                const label = node.data('label').toLowerCase();
+                const title = node.data('title')?.toLowerCase() || '';
+                return label.includes(query.toLowerCase()) || title.includes(query.toLowerCase());
+            });
+            
+            results.addClass('highlighted');
+            if (results.length > 0) {
+                cy.fit(results, 50);
+            }
+        }
+        
+        // Event listeners
+        document.getElementById('refresh-btn').addEventListener('click', loadGraph);
+        document.getElementById('fit-btn').addEventListener('click', () => cy && cy.fit());
+        document.getElementById('reset-zoom-btn').addEventListener('click', () => cy && cy.zoom(1) && cy.center());
+        document.getElementById('layout-select').addEventListener('change', (e) => changeLayout(e.target.value));
+        document.getElementById('filter-type').addEventListener('change', (e) => {
+            renderGraph(graphData.nodes, graphData.edges, e.target.value);
+        });
+        document.getElementById('search-input').addEventListener('input', (e) => searchNodes(e.target.value));
+        
+        // Add highlighting style
+        cy && cy.style().selector('.highlighted').style({
+            'border-width': 4,
+            'border-color': '#FF6B6B'
+        }).update();
+        
+        // Load graph on page load
+        loadGraph();
+    </script>
+</body>
+</html>

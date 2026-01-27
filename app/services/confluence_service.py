@@ -44,13 +44,56 @@ class ConfluenceService:
                     "id": item.get("content", {}).get("id"),
                     "title": item.get("content", {}).get("title"),
                     "type": item.get("content", {}).get("type"),
-                    "space": item.get("content", {}).get("space", {}).get("name"),
+                    "space": item.get("content", {}).get("space", {}).get("key"),
+                    "space_name": item.get("content", {}).get("space", {}).get("name"),
                     "excerpt": item.get("excerpt", ""),
                 }
                 for item in results.get("results", [])
             ]
         except Exception as e:
             logger.error(f"Error searching Confluence: {e}")
+            return []
+    
+    def get_all_pages(self, limit: int = 500) -> List[Dict[str, Any]]:
+        """Get ALL pages from all spaces (read-only)"""
+        if not self.client:
+            logger.warning("Confluence client not available")
+            return []
+        
+        try:
+            logger.info(f"Fetching all Confluence pages (limit={limit})...")
+            # Use CQL to get all pages across all spaces
+            results = self.client.cql('type=page', limit=limit, expand='space,version,body.view')
+            
+            if not results or 'results' not in results:
+                logger.warning("No Confluence pages found")
+                return []
+            
+            pages = []
+            for item in results.get("results", []):
+                content = item.get("content", {})
+                space_info = content.get("space", {})
+                version_info = content.get("version", {})
+                
+                page = {
+                    "id": content.get("id"),
+                    "title": content.get("title"),
+                    "type": content.get("type", "page"),
+                    "space": space_info.get("key"),
+                    "space_name": space_info.get("name"),
+                    "content": item.get("excerpt", ""),  # Use excerpt for preview
+                    "created": version_info.get("when") if version_info.get("number") == 1 else None,
+                    "updated": version_info.get("when"),
+                    "author": version_info.get("by", {}).get("displayName"),
+                    "labels": [],  # Can be enhanced later
+                }
+                pages.append(page)
+            
+            logger.info(f"✅ Found {len(pages)} Confluence pages across all spaces")
+            return pages
+            
+        except Exception as e:
+            logger.error(f"Error fetching all Confluence pages: {e}", exc_info=True)
             return []
     
     def get_page(self, page_id: str) -> Optional[Dict[str, Any]]:

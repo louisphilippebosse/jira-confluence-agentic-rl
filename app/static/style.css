@@ -252,6 +252,84 @@ header h1 {
     margin-top: 0.5rem;
 }
 
+.message-feedback {
+    display: flex;
+    gap: 0.5rem;
+    margin-top: 0.75rem;
+    padding-top: 0.5rem;
+    border-top: 1px solid var(--border-color);
+}
+
+.feedback-btn {
+    background: transparent;
+    border: 1px solid var(--border-color);
+    border-radius: 4px;
+    padding: 0.25rem 0.5rem;
+    cursor: pointer;
+    font-size: 1rem;
+    transition: all 0.2s;
+}
+
+.feedback-btn:hover {
+    background: var(--background);
+    transform: scale(1.1);
+}
+
+.feedback-btn.thumbs-up:hover {
+    background: #e8f5e9;
+    border-color: #4caf50;
+}
+
+.feedback-btn.thumbs-down:hover {
+    background: #ffebee;
+    border-color: #f44336;
+}
+
+.feedback-submitted {
+    color: var(--text-secondary);
+    font-size: 0.85rem;
+    font-style: italic;
+}
+
+.message-feedback {
+    display: flex;
+    gap: 0.5rem;
+    margin-top: 0.75rem;
+    padding-top: 0.75rem;
+    border-top: 1px solid var(--border-color);
+}
+
+.feedback-btn {
+    background: transparent;
+    border: 1px solid var(--border-color);
+    border-radius: 4px;
+    padding: 0.3rem 0.6rem;
+    cursor: pointer;
+    font-size: 1rem;
+    transition: all 0.2s;
+}
+
+.feedback-btn:hover {
+    background: var(--background);
+    transform: scale(1.1);
+}
+
+.feedback-btn.thumbs-up:hover {
+    background: #e3fcef;
+    border-color: var(--success-color);
+}
+
+.feedback-btn.thumbs-down:hover {
+    background: #ffebe6;
+    border-color: #de350b;
+}
+
+.feedback-submitted {
+    font-size: 0.85rem;
+    color: var(--success-color);
+    font-weight: 500;
+}
+
 .input-container {
     padding: 1.5rem;
     border-top: 1px solid var(--border-color);
@@ -343,4 +421,270 @@ header h1 {
         width: 100%;
         max-height: 200px;
     }
+}
+
+/* Approval Notification */
+.approval-notification {
+    position: fixed;
+    top: 20px;
+    right: 20px;
+    background: #ff5630;
+    color: white;
+    padding: 12px 20px;
+    border-radius: 8px;
+    box-shadow: var(--shadow-lg);
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    z-index: 1000;
+    animation: slideIn 0.3s ease;
+}
+
+.approval-badge {
+    background: white;
+    color: #ff5630;
+    font-weight: bold;
+    padding: 4px 10px;
+    border-radius: 50%;
+    font-size: 14px;
+}
+
+.approval-notification button {
+    background: white;
+    color: #ff5630;
+    border: none;
+    padding: 6px 16px;
+    border-radius: 4px;
+    cursor: pointer;
+    font-weight: 600;
+}
+
+/* Approval Panel */
+.approval-panel {
+    position: fixed;
+    top: 0;
+    right: -400px;
+    width: 400px;
+    height: 100vh;
+    background: white;
+    box-shadow: -2px 0 8px rgba(0,0,0,0.2);
+    transition: right 0.3s ease;
+    z-index: 999;
+    overflow-y: auto;
+}
+
+.approval-panel.open {
+    right: 0;
+}
+
+.approval-header {
+    background: #ff5630;
+    color: white;
+    padding: 20px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.approval-header h3 {
+    margin: 0;
+    font-size: 18px;
+}
+
+.approval-header button {
+    background: transparent;
+    border: none;
+    color: white;
+    font-size: 24px;
+    cursor: pointer;
+    padding: 0;
+    width: 30px;
+    height: 30px;
+}
+
+.approval-list {
+    padding: 20px;
+}
+
+.approval-item {
+    background: #f4f5f7;
+    border: 2px solid #dfe1e6;
+    border-radius: 8px;
+    padding: 16px;
+    margin-bottom: 16px;
+}
+
+.approval-action {
+    font-weight: bold;
+    font-size: 16px;
+    color: #172b4d;
+    margin-bottom: 12px;
+}
+
+.approval-details {
+    font-size: 14px;
+    color: #5e6c84;
+    margin-bottom: 12px;
+    line-height: 1.6;
+}
+
+.approval-details div {
+    margin-bottom: 6px;
+}
+
+.approval-actions {
+    display: flex;
+    gap: 10px;
+}
+
+.approve-btn, .reject-btn {
+    flex: 1;
+    padding: 10px;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    font-weight: 600;
+    font-size: 14px;
+    transition: all 0.2s;
+}
+
+.approve-btn {
+    background: #00875a;
+    color: white;
+}
+
+.approve-btn:hover {
+    background: #006644;
+}
+
+.reject-btn {
+    background: #ff5630;
+    color: white;
+}
+
+.reject-btn:hover {
+    background: #de350b;
+}
+
+@keyframes slideIn {
+    from {
+        transform: translateX(400px);
+        opacity: 0;
+    }
+    to {
+        transform: translateX(0);
+        opacity: 1;
+    }
+}
+
+/* Markdown formatting in messages */
+.message-content h1,
+.message-content h2,
+.message-content h3,
+.message-content h4 {
+    margin-top: 1rem;
+    margin-bottom: 0.5rem;
+    color: var(--text-primary);
+    font-weight: 600;
+}
+
+.message-content h1 {
+    font-size: 1.5rem;
+    border-bottom: 2px solid var(--border-color);
+    padding-bottom: 0.3rem;
+}
+
+.message-content h2 {
+    font-size: 1.3rem;
+    border-bottom: 1px solid var(--border-color);
+    padding-bottom: 0.3rem;
+}
+
+.message-content h3 {
+    font-size: 1.15rem;
+}
+
+.message-content h4 {
+    font-size: 1rem;
+}
+
+.message-content ul,
+.message-content ol {
+    margin: 0.75rem 0;
+    padding-left: 1.5rem;
+}
+
+.message-content li {
+    margin-bottom: 0.3rem;
+}
+
+.message-content p {
+    margin: 0.5rem 0;
+}
+
+.message-content table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 1rem 0;
+    background: white;
+    border-radius: 6px;
+    overflow: hidden;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+.message-content thead {
+    background: var(--primary-color);
+    color: white;
+}
+
+.message-content th {
+    padding: 0.75rem;
+    text-align: left;
+    font-weight: 600;
+    border-bottom: 2px solid var(--border-color);
+}
+
+.message-content td {
+    padding: 0.75rem;
+    border-bottom: 1px solid var(--border-color);
+}
+
+.message-content tbody tr:hover {
+    background: #f9fafb;
+}
+
+.message-content tbody tr:last-child td {
+    border-bottom: none;
+}
+
+.message-content blockquote {
+    border-left: 4px solid var(--primary-color);
+    padding-left: 1rem;
+    margin: 1rem 0;
+    color: var(--text-secondary);
+    font-style: italic;
+}
+
+.message-content hr {
+    border: none;
+    border-top: 1px solid var(--border-color);
+    margin: 1.5rem 0;
+}
+
+.message-content strong {
+    font-weight: 600;
+    color: var(--text-primary);
+}
+
+.message-content em {
+    font-style: italic;
+}
+
+.message-content a {
+    color: var(--primary-color);
+    text-decoration: none;
+}
+
+.message-content a:hover {
+    text-decoration: underline;
 }

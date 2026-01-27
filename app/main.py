@@ -7,14 +7,22 @@ import logging
 
 from app.config import settings
 from app.models.database import init_db
-from app.api import chat, knowledge_graph
+from app.api import chat, knowledge_graph, feedback, agents, approvals
 
-# Configure logging
+# Configure logging - Set to DEBUG for detailed logs
 logging.basicConfig(
-    level=logging.INFO,
-    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
+    level=logging.DEBUG,  # Change to DEBUG for verbose logging
+    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
+    handlers=[
+        logging.StreamHandler()  # Output to console
+    ]
 )
 logger = logging.getLogger(__name__)
+
+# Set specific loggers to appropriate levels
+logging.getLogger('httpx').setLevel(logging.WARNING)  # Reduce HTTP noise
+logging.getLogger('httpcore').setLevel(logging.WARNING)
+logging.getLogger('urllib3').setLevel(logging.WARNING)
 
 # Initialize FastAPI app
 app = FastAPI(
@@ -41,6 +49,9 @@ templates = Jinja2Templates(directory="app/templates")
 # Include API routers
 app.include_router(chat.router, prefix="/api", tags=["chat"])
 app.include_router(knowledge_graph.router, prefix="/api/kg", tags=["knowledge-graph"])
+app.include_router(feedback.router, prefix="/api/feedback", tags=["feedback"])
+app.include_router(agents.router, prefix="/api", tags=["agents"])
+app.include_router(approvals.router, tags=["approvals"])
 
 
 @app.on_event("startup")
@@ -59,6 +70,12 @@ async def startup_event():
 async def root(request: Request):
     """Serve the main UI"""
     return templates.TemplateResponse("index.html", {"request": request})
+
+
+@app.get("/graph", response_class=HTMLResponse)
+async def graph_view(request: Request):
+    """Serve the knowledge graph visualization UI"""
+    return templates.TemplateResponse("graph.html", {"request": request})
 
 
 @app.get("/health")
