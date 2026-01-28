@@ -15,6 +15,7 @@ class ChatRequest(BaseModel):
     """Schema for incoming chat requests"""
     message: str = Field(..., min_length=1, max_length=5000)
     session_id: Optional[str] = None
+    context_modes: Optional[List[str]] = Field(None, description="Optional list of context modes: ['jira', 'confluence', 'web']. If None or empty, auto-detect is used")
 
 
 class ChatResponse(BaseModel):

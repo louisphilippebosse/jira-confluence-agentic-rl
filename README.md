@@ -1,4 +1,4 @@
-# Jira-Confluence Agentic AI System í´–
+# Jira-Confluence Agentic AI System ï¿½ï¿½ï¿½
 
 > A security-first, agentic AI system that integrates with Jira and Confluence to provide delivery intelligence and decision support for engineering teams.
 
@@ -18,16 +18,16 @@
 
 ## Features
 
-í´ **Security-First** - Read-only access, environment-based configuration  
-í´– **Agentic AI** - LangChain with OpenAI or Ollama (local)  
-íµ¸ï¸ **Knowledge Graph** - NetworkX-powered RAG with auto-updates  
-í¿  **Fully Local** - Run offline with Ollama  
-í²¬ **Conversational** - Intuitive chat UI with history  
-í³Š **Delivery Intelligence** - Project metrics and sprint analysis  
+ï¿½ï¿½ï¿½ **Security-First** - Read-only access, environment-based configuration  
+ï¿½ï¿½ï¿½ **Agentic AI** - LangChain with OpenAI or Ollama (local)  
+ï¿½ï¿½ï¿½ï¸ **Knowledge Graph** - NetworkX-powered RAG with auto-updates  
+ï¿½ï¿½ï¿½ **Fully Local** - Run offline with Ollama  
+ï¿½ï¿½ï¿½ **Conversational** - Intuitive chat UI with history  
+ï¿½ï¿½ï¿½ **Delivery Intelligence** - Project metrics and sprint analysis  
 
 ## Quick Start
 
-### Fastest: Local with Ollama
+### Option 1: React Frontend (Recommended)
 
 ```bash
 # 1. Install Ollama: https://ollama.ai/download
@@ -42,17 +42,30 @@ pip install -r requirements.txt
 cp .env.example .env
 # Edit .env - set LLM_PROVIDER=ollama, add Jira/Confluence credentials
 
-# 4. Run
+# 4. Run Backend
 uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
+
+# 5. Run Frontend (new terminal)
+cd frontend && npm install && npm run dev
+# Open: http://localhost:3000
+```
+
+### Option 2: Classic UI (Legacy)
+
+```bash
+# Same steps 1-3 above, then:
+
+# 4. Run
+uvicorn app.main:app --reload --host 0.0.0.0 --port 8000 --log-level debug
 # Open: http://localhost:8000
 ```
 
 ## Architecture
 
 ```
-Frontend UI
-    â†“
-FastAPI App
+React Frontend (Port 3000)
+    â†“ API Proxy
+FastAPI Backend (Port 8000)
     â”œâ”€ AI Agent (LangChain)
     â”‚   â”œâ”€ Jira Tool â†’ Knowledge Graph âœ“
     â”‚   â”œâ”€ Confluence Tool â†’ Knowledge Graph âœ“
@@ -62,6 +75,14 @@ FastAPI App
     â”‚   â€¢ Auto-update on every query
     â””â”€ SQLite (Conversation History)
 ```
+
+### Frontend (NEW!)
+
+- **React + TypeScript + Vite** - Modern, fast development
+- **Component-based** - Reusable, testable UI
+- **Context Dropdown** - Perfect design, no CSS issues
+- **Hot reload** - Instant updates during development
+- See [frontend/README.md](frontend/README.md) for details
 
 ### Key Files
 

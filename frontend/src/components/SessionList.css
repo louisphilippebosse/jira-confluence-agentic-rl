@@ -1,0 +1,117 @@
+.session-list {
+  width: 240px;
+  background: white;
+  border-radius: 8px;
+  padding: 1.5rem;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.12);
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+}
+
+.session-list h3 {
+  margin-bottom: 1rem;
+  color: #172b4d;
+  font-size: 1.1rem;
+}
+
+.new-chat-btn {
+  width: 100%;
+  padding: 0.75rem;
+  background: #0052cc;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  font-size: 1rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.2s;
+  margin-bottom: 1rem;
+}
+
+.new-chat-btn:hover {
+  background: #0065ff;
+}
+
+.sessions {
+  flex: 1;
+  overflow-y: auto;
+}
+
+.session-item {
+  position: relative;
+  width: 100%;
+  padding: 0.75rem;
+  background: transparent;
+  border: none;
+  border-radius: 6px;
+  text-align: left;
+  cursor: pointer;
+  transition: background 0.2s;
+  margin-bottom: 0.5rem;
+}
+
+.session-item:hover {
+  background: #f4f5f7;
+}
+
+.session-item.active {
+  background: #e6f2ff;
+}
+
+.session-title {
+  font-size: 0.9rem;
+  font-weight: 500;
+  color: #172b4d;
+  margin-bottom: 0.25rem;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.session-meta {
+  font-size: 0.75rem;
+  color: #5e6c84;
+}
+
+.session-actions {
+  position: absolute;
+  top: 0.5rem;
+  right: 0.5rem;
+  display: none;
+  gap: 0.25rem;
+}
+
+.session-item:hover .session-actions {
+  display: flex;
+}
+
+.action-btn {
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  font-size: 0.9rem;
+  padding: 0.25rem;
+  border-radius: 4px;
+  transition: background 0.2s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.action-btn:hover {
+  background: rgba(0, 0, 0, 0.05);
+}
+
+.delete-btn:hover {
+  background: #ffebe6;
+}
+
+.session-title-edit {
+  width: 100%;
+  padding: 0.25rem 0.5rem;
+  font-size: 0.9rem;
+  border: 2px solid #0052cc;
+  border-radius: 4px;
+  outline: none;
+}

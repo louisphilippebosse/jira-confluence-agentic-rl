@@ -141,8 +141,17 @@ async def _execute_action(action: str, parameters: Dict[str, Any]) -> Dict[str, 
             issue_type=parameters.get("issue_type", "Task"),
             description=parameters.get("description", ""),
             parent_key=parameters.get("parent_key"),
-            assignee=parameters.get("assignee")
+            assignee=parameters.get("assignee"),
+            priority=parameters.get("priority"),
+            labels=parameters.get("labels")
         )
+        
+        # Add newly created issue to knowledge graph
+        if result and result.get("key"):
+            from app.services.knowledge_graph_service import knowledge_graph_service
+            logger.info(f"💾 Adding newly created issue {result['key']} to Knowledge Graph")
+            knowledge_graph_service.add_jira_issue(result)
+        
         return result or {"error": "Failed to create issue"}
     
     elif action == "update_jira_issue":
@@ -151,15 +160,41 @@ async def _execute_action(action: str, parameters: Dict[str, Any]) -> Dict[str, 
         parameters.pop("approval_required", None)
         
         fields = {}
-        if "summary" in parameters:
-            fields["summary"] = parameters["summary"]
-        if "description" in parameters:
-            fields["description"] = parameters["description"]
-        if "assignee" in parameters:
-            fields["assignee"] = {"name": parameters["assignee"]}
+        
+        # Handle generic field/value pattern (from AI agent)
+        if "field" in parameters and "value" in parameters:
+            field_name = parameters["field"]
+            field_value = parameters["value"]
+            
+            # Map common field names to Jira field format
+            if field_name == "priority":
+                fields["priority"] = {"name": field_value}
+            elif field_name == "summary":
+                fields["summary"] = field_value
+            elif field_name == "description":
+                fields["description"] = field_value
+            elif field_name == "assignee":
+                fields["assignee"] = {"name": field_value}
+            elif field_name == "labels":
+                fields["labels"] = field_value if isinstance(field_value, list) else [field_value]
+            else:
+                # Generic field update
+                fields[field_name] = field_value
+        else:
+            # Handle direct field parameters (backward compatibility)
+            if "summary" in parameters:
+                fields["summary"] = parameters["summary"]
+            if "description" in parameters:
+                fields["description"] = parameters["description"]
+            if "assignee" in parameters:
+                fields["assignee"] = {"name": parameters["assignee"]}
+            if "priority" in parameters:
+                fields["priority"] = {"name": parameters["priority"]}
+            if "labels" in parameters:
+                fields["labels"] = parameters["labels"]
         
         success = jira_service.update_issue(issue_key, fields)
-        return {"success": success, "issue_key": issue_key}
+        return {"success": success, "issue_key": issue_key, "updated_fields": list(fields.keys())}
     
     elif action == "transition_jira_issue":
         success = jira_service.transition_issue(

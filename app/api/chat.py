@@ -89,7 +89,8 @@ async def chat(request: ChatRequest, db: Session = Depends(get_db)):
             message=request.message,
             session_id=session_id,
             conversation_history=history,
-            recommended_action=recommended_action
+            recommended_action=recommended_action,
+            context_modes=request.context_modes
         )
         
         # Save assistant response to database
@@ -122,7 +123,7 @@ async def chat(request: ChatRequest, db: Session = Depends(get_db)):
         raise HTTPException(status_code=500, detail=str(e))
 
 
-@router.get("/conversation/{session_id}", response_model=ConversationHistory)
+@router.get("/sessions/{session_id}", response_model=ConversationHistory)
 async def get_conversation_history(session_id: str, db: Session = Depends(get_db)):
     """
     Retrieve conversation history for a specific session
@@ -170,7 +171,7 @@ async def get_sessions(db: Session = Depends(get_db)):
         raise HTTPException(status_code=500, detail=str(e))
 
 
-@router.delete("/conversation/{session_id}")
+@router.delete("/sessions/{session_id}")
 async def delete_conversation(session_id: str, db: Session = Depends(get_db)):
     """
     Delete a conversation history and session
@@ -187,5 +188,30 @@ async def delete_conversation(session_id: str, db: Session = Depends(get_db)):
         return {"message": "Conversation deleted successfully"}
     except Exception as e:
         logger.error(f"Error deleting conversation: {e}")
+        db.rollback()
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.patch("/sessions/{session_id}")
+async def update_session(session_id: str, request: dict, db: Session = Depends(get_db)):
+    """
+    Update session metadata (e.g., title)
+    """
+    try:
+        session = db.query(SessionModel).filter(SessionModel.session_id == session_id).first()
+        if not session:
+            raise HTTPException(status_code=404, detail="Session not found")
+        
+        if "title" in request:
+            session.title = request["title"]
+            session.updated_at = datetime.utcnow()
+        
+        db.commit()
+        logger.info(f"✏️ Updated session {session_id}: title='{request.get('title')}'")
+        return {"message": "Session updated successfully"}
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error updating session: {e}")
         db.rollback()
         raise HTTPException(status_code=500, detail=str(e))

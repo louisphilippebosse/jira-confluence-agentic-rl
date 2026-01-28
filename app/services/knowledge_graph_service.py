@@ -310,6 +310,47 @@ class KnowledgeGraphService:
         
         return results
     
+    def search_by_text(self, query: str, entity_type: Optional[str] = None, limit: int = 10) -> List[Dict[str, Any]]:
+        """Search entities by text in summary, title, or description"""
+        if not self.enabled:
+            return []
+        
+        query_lower = query.lower()
+        results = []
+        
+        for node_id, node_data in self.graph.nodes(data=True):
+            # Filter by type if specified
+            if entity_type and node_data.get("entity_type") != entity_type:
+                continue
+            
+            properties = node_data.get("properties", {})
+            
+            # Search in relevant text fields
+            searchable_text = " ".join([
+                str(properties.get("summary", "")),
+                str(properties.get("title", "")),
+                str(properties.get("description", "")),
+                str(properties.get("key", "")),
+                str(node_id)
+            ]).lower()
+            
+            # Simple relevance scoring
+            if query_lower in searchable_text:
+                # Count occurrences for basic relevance scoring
+                score = searchable_text.count(query_lower)
+                
+                results.append({
+                    "id": node_id,
+                    "type": node_data.get("entity_type"),
+                    "properties": properties,
+                    "updated_at": node_data.get("updated_at"),
+                    "score": score
+                })
+        
+        # Sort by score and limit results
+        results.sort(key=lambda x: x["score"], reverse=True)
+        return results[:limit]
+    
     def get_graph_stats(self) -> Dict[str, Any]:
         """Get statistics about the knowledge graph"""
         if not self.enabled:

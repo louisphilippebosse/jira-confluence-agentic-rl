@@ -1,13 +1,10 @@
-from fastapi import FastAPI, Request
-from fastapi.staticfiles import StaticFiles
-from fastapi.responses import HTMLResponse, FileResponse
+from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.templating import Jinja2Templates
 import logging
 
 from app.config import settings
 from app.models.database import init_db
-from app.api import chat, knowledge_graph, feedback, agents, approvals
+from app.api import chat, knowledge_graph, feedback, agents, approvals, rl_metrics
 
 # Configure logging - Set to DEBUG for detailed logs
 logging.basicConfig(
@@ -40,18 +37,13 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# Mount static files
-app.mount("/static", StaticFiles(directory="app/static"), name="static")
-
-# Templates
-templates = Jinja2Templates(directory="app/templates")
-
 # Include API routers
 app.include_router(chat.router, prefix="/api", tags=["chat"])
 app.include_router(knowledge_graph.router, prefix="/api/kg", tags=["knowledge-graph"])
 app.include_router(feedback.router, prefix="/api/feedback", tags=["feedback"])
 app.include_router(agents.router, prefix="/api", tags=["agents"])
-app.include_router(approvals.router, tags=["approvals"])
+app.include_router(approvals.router, tags=["approvals"])  # Already has /api/approvals prefix in router
+app.include_router(rl_metrics.router, prefix="/api/rl", tags=["rl-metrics"])
 
 
 @app.on_event("startup")
@@ -64,18 +56,6 @@ async def startup_event():
     logger.info(f"Knowledge Graph: {'Enabled' if settings.enable_knowledge_graph else 'Disabled'}")
     init_db()
     logger.info("Database initialized")
-
-
-@app.get("/", response_class=HTMLResponse)
-async def root(request: Request):
-    """Serve the main UI"""
-    return templates.TemplateResponse("index.html", {"request": request})
-
-
-@app.get("/graph", response_class=HTMLResponse)
-async def graph_view(request: Request):
-    """Serve the knowledge graph visualization UI"""
-    return templates.TemplateResponse("graph.html", {"request": request})
 
 
 @app.get("/health")

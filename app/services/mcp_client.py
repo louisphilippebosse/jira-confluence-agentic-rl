@@ -70,6 +70,7 @@ class MCPClient:
         from app.services.jira_service import jira_service
         from app.services.confluence_service import confluence_service
         from app.services.knowledge_graph_service import knowledge_graph_service
+        from app.services.web_search_service import web_search_service
         
         try:
             if tool_name == "search_jira_issues":
@@ -110,6 +111,13 @@ class MCPClient:
                     entity_id=arguments["entity_id"],
                     relationship_type=arguments.get("relationship_type"),
                     max_depth=arguments.get("max_depth", 2)
+                )
+                return {"results": results, "count": len(results)}
+            
+            elif tool_name == "search_web":
+                results = await web_search_service.search(
+                    query=arguments["query"],
+                    max_results=arguments.get("max_results", 5)
                 )
                 return {"results": results, "count": len(results)}
             

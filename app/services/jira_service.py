@@ -2,6 +2,7 @@ from jira import JIRA
 from typing import List, Dict, Any, Optional
 from app.config import settings
 import logging
+import re
 
 logger = logging.getLogger(__name__)
 
@@ -162,9 +163,104 @@ class JiraService:
         jql = f'sprint = "{sprint_name}" ORDER BY status'
         return self.search_issues(jql)
     
+    def get_all_projects(self) -> List[Dict[str, str]]:
+        """Get all accessible Jira projects"""
+        logger.info("📋 Fetching all Jira projects")
+        
+        if not self.client:
+            logger.error("❌ Jira client is not available")
+            return []
+        
+        try:
+            projects = self.client.projects()
+            project_list = [
+                {
+                    'key': p.key,
+                    'name': p.name,
+                    'id': p.id
+                }
+                for p in projects
+            ]
+            logger.info(f"✅ Found {len(project_list)} projects")
+            return project_list
+        except Exception as e:
+            logger.error(f"❌ Error fetching projects: {e}", exc_info=True)
+            return []
+    
+    def find_project(self, project_key: str) -> Optional[Dict[str, str]]:
+        """Find a project by exact key match or close name match"""
+        projects = self.get_all_projects()
+        project_key_upper = project_key.upper()
+        
+        # First try exact key match
+        for project in projects:
+            if project['key'].upper() == project_key_upper:
+                return project
+        
+        # Then try exact name match (case-insensitive)
+        for project in projects:
+            # Remove spaces and special chars for comparison
+            normalized_name = re.sub(r'[^A-Z0-9]', '', project['name'].upper())
+            normalized_search = re.sub(r'[^A-Z0-9]', '', project_key_upper)
+            
+            if normalized_name == normalized_search:
+                logger.info(f"✅ Matched project by name: '{project_key}' → {project['key']} ({project['name']})")
+                return project
+            
+            # Also check if search term is in the name
+            if normalized_search in normalized_name or normalized_name in normalized_search:
+                # Calculate similarity
+                if len(normalized_search) >= len(normalized_name) * 0.7:  # At least 70% match
+                    logger.info(f"✅ Matched project by partial name: '{project_key}' → {project['key']} ({project['name']})")
+                    return project
+        
+        return None
+    
+    def find_similar_projects(self, project_key: str, limit: int = 5) -> List[Dict[str, Any]]:
+        """Find projects similar to the given key"""
+        projects = self.get_all_projects()
+        project_key_upper = project_key.upper()
+        
+        # Calculate similarity scores
+        similar = []
+        for project in projects:
+            # Check for partial matches
+            score = 0
+            p_key = project['key'].upper()
+            p_name = project['name'].upper()
+            
+            # Exact match (shouldn't happen but just in case)
+            if p_key == project_key_upper:
+                score = 100
+            # Starts with the search key
+            elif p_key.startswith(project_key_upper):
+                score = 90
+            # Contains the search key
+            elif project_key_upper in p_key:
+                score = 80
+            # Name contains search key
+            elif project_key_upper in p_name:
+                score = 70
+            # Levenshtein-like: check character overlap
+            else:
+                # Simple character overlap scoring
+                overlap = sum(1 for c in project_key_upper if c in p_key)
+                score = (overlap / len(project_key_upper)) * 50
+            
+            if score > 0:
+                similar.append({
+                    'project': project,
+                    'score': score
+                })
+        
+        # Sort by score and return top matches
+        similar.sort(key=lambda x: x['score'], reverse=True)
+        return [s['project'] for s in similar[:limit]]
+    
     def create_issue(self, project_key: str, summary: str, issue_type: str = "Task", 
                     description: str = "", parent_key: Optional[str] = None,
-                    assignee: Optional[str] = None) -> Optional[Dict[str, Any]]:
+                    assignee: Optional[str] = None, priority: Optional[str] = None,
+                    labels: Optional[List[str]] = None) -> Dict[str, Any]:
         """Create a new Jira issue (WRITE operation - requires approval)"""
         logger.info(f"📝 Creating Jira issue in {project_key}: {summary}")
         
@@ -188,6 +284,13 @@ class JiraService:
             if assignee:
                 fields['assignee'] = {'name': assignee}
             
+            if priority:
+                fields['priority'] = {'name': priority}
+            
+            if labels:
+                fields['labels'] = labels if isinstance(labels, list) else [labels]
+            
+            logger.info(f"Creating issue with fields: {fields}")
             new_issue = self.client.create_issue(fields=fields)
             
             result = {

@@ -1,0 +1,162 @@
+.context-dropdown {
+  position: relative;
+  flex-shrink: 0;
+}
+
+.context-dropdown-btn {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.75rem 1rem;
+  background: white;
+  border: 2px solid #dfe1e6;
+  border-radius: 8px;
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: #172b4d;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  min-width: 130px;
+  height: 48px;
+  white-space: nowrap;
+}
+
+.context-dropdown-btn:hover {
+  border-color: #0052cc;
+  background: #fafbfc;
+}
+
+.context-dropdown-btn.open {
+  border-color: #0052cc;
+}
+
+.mode-icon {
+  width: 16px;
+  height: 16px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.icon-img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+
+.mode-text {
+  flex: 1;
+}
+
+.dropdown-arrow {
+  transition: transform 0.2s ease;
+}
+
+.context-dropdown-btn.open .dropdown-arrow {
+  transform: rotate(180deg);
+}
+
+.context-dropdown-menu {
+  position: absolute;
+  bottom: calc(100% + 8px);
+  left: 0;
+  background: white;
+  border: 1px solid #dfe1e6;
+  border-radius: 8px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+  min-width: 260px;
+  z-index: 1000;
+  overflow: hidden;
+  animation: slideUp 0.2s ease;
+}
+
+@keyframes slideUp {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.context-option {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  width: 100%;
+  padding: 0.75rem 1rem;
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  transition: background 0.15s ease;
+  text-align: left;
+}
+
+.context-option:hover:not(.disabled) {
+  background: #f8f9fa;
+}
+
+.context-option.active {
+  background: #e6f2ff;
+}
+
+.context-option.auto-disabled {
+  opacity: 0.6;
+}
+
+.context-option.auto-disabled .option-label,
+.context-option.auto-disabled .option-desc {
+  color: #8993a4;
+}
+
+.option-checkbox {
+  width: 16px;
+  height: 16px;
+  cursor: pointer;
+  flex-shrink: 0;
+  pointer-events: none;
+}
+
+.dropdown-divider {
+  height: 1px;
+  background: #dfe1e6;
+  margin: 0.5rem 0;
+}
+
+.context-option.active {
+  background: #e6f2ff;
+}
+
+.option-icon {
+  width: 20px;
+  height: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.option-content {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 0.125rem;
+}
+
+.option-label {
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: #172b4d;
+}
+
+.option-desc {
+  font-size: 0.75rem;
+  color: #5e6c84;
+}
+
+.checkmark {
+  flex-shrink: 0;
+  stroke: #0052cc;
+}
