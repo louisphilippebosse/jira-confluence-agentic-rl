@@ -1,17 +1,20 @@
-import React, { createContext, useContext, useState, ReactNode } from 'react';
+import { createContext, useContext, useState } from 'react';
 import type { ChatMessage, Session, ContextMode } from '../types';
+import type { ReactNode } from 'react';
+
+import type { Dispatch, SetStateAction } from 'react';
 
 interface AppContextType {
   currentSessionId: string | null;
-  setCurrentSessionId: (id: string | null) => void;
+  setCurrentSessionId: Dispatch<SetStateAction<string | null>>;
   sessions: Session[];
-  setSessions: (sessions: Session[]) => void;
+  setSessions: Dispatch<SetStateAction<Session[]>>;
   messages: ChatMessage[];
-  setMessages: (messages: ChatMessage[]) => void;
+  setMessages: Dispatch<SetStateAction<ChatMessage[]>>;
   contextMode: ContextMode;
-  setContextMode: (mode: ContextMode) => void;
+  setContextMode: Dispatch<SetStateAction<ContextMode>>;
   isLoading: boolean;
-  setIsLoading: (loading: boolean) => void;
+  setIsLoading: Dispatch<SetStateAction<boolean>>;
 }
 
 const AppContext = createContext<AppContextType | undefined>(undefined);
@@ -31,7 +34,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
         sessions,
         setSessions,
         messages,
-        setMessages,
+        setMessages, // This is the useState setter, supports updater fn
         contextMode,
         setContextMode,
         isLoading,

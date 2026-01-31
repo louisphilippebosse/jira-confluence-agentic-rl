@@ -24,6 +24,7 @@ class Settings(BaseSettings):
     confluence_url: str
     confluence_username: str
     confluence_api_token: str
+    confluence_personal_space: str = ""  # Optional: Filter searches to personal space (e.g., ~accountid)
     
     # Application Configuration
     database_url: str = "sqlite:///./data/conversations.db"
@@ -37,6 +38,15 @@ class Settings(BaseSettings):
     # Knowledge Graph Configuration
     enable_knowledge_graph: bool = True
     knowledge_graph_path: str = "./data/knowledge_graph.gpickle"
+    
+    # Nano-GraphRAG Configuration (unified Graph + Vector RAG)
+    enable_nano_graphrag: bool = True
+    nano_graphrag_working_dir: str = "./data/nano_graphrag"
+    ollama_embedding_model: str = "nomic-embed-text"
+    
+    # MCP (Model Context Protocol) Configuration
+    enable_mcp: bool = True
+    mcp_proxy_url: str = "http://localhost:3000"
     
     @property
     def allowed_origins_list(self) -> List[str]:

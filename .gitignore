@@ -208,5 +208,6 @@ __marimo__/
 
 # Application specific
 data/
+ollama/
 .env
 *.db

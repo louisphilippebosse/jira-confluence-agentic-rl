@@ -1,0 +1,5 @@
+ollama/
+data/
+.venv/
+node_modules/
+.git/

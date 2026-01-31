@@ -1,7 +1,7 @@
 import { useState, useRef, useEffect } from 'react';
 import { JiraIcon, ConfluenceIcon } from '@atlaskit/logo';
 import { useApp } from '../contexts/AppContext';
-import type { ContextMode } from '../types';
+// import type { ContextMode } from '../types';
 import './ContextDropdown.css';
 
 type ModeOption = 'jira' | 'confluence' | 'web';

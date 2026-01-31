@@ -14,6 +14,16 @@ export const chatService = {
     return response.data;
   },
 
+  async sendSkillMessage(request: { query: string; context?: any }): Promise<{
+    answer: string;
+    sources: string[];
+    skill_results: any[];
+    reasoning: string;
+  }> {
+    const response = await api.post('/skills/query', request);
+    return response.data;
+  },
+
   async getSessions(): Promise<Session[]> {
     const response = await api.get('/sessions');
     return response.data;

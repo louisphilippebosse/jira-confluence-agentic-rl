@@ -13,10 +13,11 @@ langchain-ollama>=0.0.1
 langchain-community>=0.0.10
 langgraph>=0.0.20
 
-# Knowledge Graph & RAG
+# Knowledge Graph & RAG (nano-graphrag handles graph + vector storage)
 networkx>=3.2
 numpy>=1.26.0
 scipy>=1.11.0
+nano-graphrag>=0.0.8
 
 # Jira & Confluence Integration
 jira>=3.5.0
@@ -34,6 +35,9 @@ cryptography>=41.0.0
 httpx>=0.25.0
 python-multipart>=0.0.6
 requests>=2.31.0
+aiohttp>=3.9.0
+beautifulsoup4>=4.12.0
+lxml>=4.9.0
 
 # MCP (Model Context Protocol) Server
 mcp>=0.1.0

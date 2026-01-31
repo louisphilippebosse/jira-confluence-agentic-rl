@@ -84,12 +84,49 @@ FastAPI Backend (Port 8000)
 - **Hot reload** - Instant updates during development
 - See [frontend/README.md](frontend/README.md) for details
 
+### 🎯 Skill-Based Architecture (NEW!)
+
+The system now uses **Anthropic's Skills framework** for dynamic capability discovery:
+
+```
+User Query → Skill Registry → Skill Orchestrator → Synthesized Answer
+                ↓                    ↓
+         Find relevant         Execute skills
+         skills by LLM        (Jira, Confluence, KG)
+```
+
+**Available Skills:**
+- 📦 **jira-search** - Search issues with JQL or keywords
+- 📦 **confluence-search** - Find pages in personal/team spaces
+- 📦 **knowledge-graph-query** - Semantic search cached data
+- 📦 **multi-source-synthesizer** - Combine results intelligently
+
+**Benefits:**
+- ✅ Extensible: Add skills without code changes
+- ✅ Multi-source: Automatically combines Jira + Confluence + KG
+- ✅ Adaptive: LLM selects best strategy dynamically
+
+**Try it:**
+```bash
+# List available skills
+curl http://localhost:8000/api/skills
+
+# Execute skill-based query
+curl -X POST http://localhost:8000/api/skills/query \
+  -H "Content-Type: application/json" \
+  -d '{"query": "Find Docker issues"}'
+```
+
+See [SKILLS_IMPLEMENTATION.md](SKILLS_IMPLEMENTATION.md) for full details.
+
 ### Key Files
 
-- [app/services/ai_agent_service.py](app/services/ai_agent_service.py) - AI agent with KG integration
-- [app/services/knowledge_graph_service.py](app/services/knowledge_graph_service.py) - Auto-loading graph
-- [app/services/jira_service.py](app/services/jira_service.py) - Jira with child issues
-- [mcp_server.py](mcp_server.py) - Optional MCP server for AI assistants
+- [app/services/core/skill_registry.py](app/services/core/skill_registry.py) - Skill discovery
+- [app/services/core/skill_orchestrator.py](app/services/core/skill_orchestrator.py) - Orchestration
+- [app/services/core/ai_agent_service.py](app/services/core/ai_agent_service.py) - Legacy AI agent
+- [app/services/data/knowledge_graph_service.py](app/services/data/knowledge_graph_service.py) - Auto-loading graph
+- [app/services/integrations/jira_service.py](app/services/integrations/jira_service.py) - Jira integration
+- [skills/](skills/) - Skill definitions (jira-search, confluence-search, etc.)
 
 ## Configuration
 

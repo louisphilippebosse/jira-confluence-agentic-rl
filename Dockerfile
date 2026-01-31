@@ -27,5 +27,5 @@ EXPOSE 8000
 HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
     CMD python -c "import requests; requests.get('http://localhost:8000/health')"
 
-# Run the application
-CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000"]
+# Run KG scripts on first run if needed, then start the app
+CMD ["/bin/bash", "-c", "if [ ! -f /app/data/knowledge_graph.gpickle ]; then python -m app.maintenance.repopulate_kg && python -m app.maintenance.build_communities; fi; exec uvicorn app.main:app --host 0.0.0.0 --port 8000 --log-level debug"]
