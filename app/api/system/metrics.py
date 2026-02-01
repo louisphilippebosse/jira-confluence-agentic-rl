@@ -5,7 +5,7 @@ from fastapi import APIRouter
 from typing import Dict, Any
 import logging
 
-from app.services.graphrag.rl_service import rl_service
+from app.services.rl.rl_service import rl_service
 
 logger = logging.getLogger(__name__)
 

@@ -1,6 +1,6 @@
 """Data storage and learning services"""
 from app.services.graphrag.knowledge_graph_service import KnowledgeGraphService, knowledge_graph_service
-from app.services.graphrag.rl_service import RLService, rl_service
+from app.services.rl.rl_service import RLService, rl_service
 
 # Nano-GraphRAG (unified Graph + Vector RAG) - primary service
 try:

@@ -8,7 +8,7 @@ import logging
 
 from app.models.database import get_db, Feedback, Conversation
 from app.models.schemas import FeedbackCreate, FeedbackResponse
-from app.services.graphrag.rl_service import rl_service
+from app.services.rl.rl_service import rl_service
 
 logger = logging.getLogger(__name__)
 

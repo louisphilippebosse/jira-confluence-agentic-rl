@@ -161,6 +161,11 @@ class AgentOrchestrator:
             intent = await self.intent_classifier.classify(message, conversation_history)
             logger.info(f"✅ Intent: {intent.primary_intent}/{intent.action} (confidence: {intent.confidence:.2f})")
             
+            # Handle write operations specially
+            if intent.is_write_operation:
+                logger.info(f"✏️ Write operation detected: {intent.action}")
+                return self._handle_write_operation(intent, message, context)
+            
             # Enhance routing with skill analysis data sources
             suggested_tools = None
             if skill_analysis and skill_analysis.get('data_sources'):
@@ -224,6 +229,55 @@ class AgentOrchestrator:
         
         logger.info(f"💭 Including {len(recent_history)} previous messages for context")
         return context
+    
+    def _handle_write_operation(self, intent: ClassifiedIntent, message: str, context: str) -> str:
+        """Handle write operations (create, update, delete).
+        
+        For now, this system is READ-ONLY. We explain this to the user
+        and offer to help with alternatives.
+        """
+        action = intent.action
+        entities = intent.entities
+        
+        if action == "create":
+            # Extract what they want to create
+            entity_info = ""
+            if entities:
+                entity_info = f" about '{entities[0].get('value', '')}'" if entities else ""
+            
+            return f"""I understand you want to **create** something{entity_info}. 
+
+🔒 **Note:** This system is currently **read-only** for security reasons. I cannot create, update, or delete items in Jira or Confluence directly.
+
+However, I can help you:
+1. **Draft the content** - I can write out the story/epic/task details for you to copy
+2. **Search for similar items** - Find existing issues that might be related
+3. **Provide a template** - Give you a structured template to fill in
+
+Would you like me to draft the content for you, or search for related existing items?"""
+        
+        elif action == "update":
+            return """I understand you want to **update** something.
+
+🔒 **Note:** This system is currently **read-only** for security reasons. I cannot modify items in Jira or Confluence directly.
+
+However, I can:
+1. **Show you the current state** - Search for the item to review
+2. **Suggest changes** - Help you plan what updates are needed
+
+Which would you prefer?"""
+        
+        elif action == "delete":
+            return """I understand you want to **delete** something.
+
+🔒 **Note:** This system is **read-only** and cannot delete items for security reasons.
+
+I can help you **find the item** you're referring to if you'd like to review it first."""
+        
+        else:
+            return f"""I detected a write operation ({action}), but this system is currently **read-only** for security reasons. I can only search and read from Jira and Confluence.
+
+How else can I help you?"""
     
     async def _execute_tools(self, tools: List, strategy: str,
                              intent: ClassifiedIntent, message: str,

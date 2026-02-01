@@ -1,6 +1,5 @@
 
 import { useState, useRef, useEffect } from 'react';
-import { kgAdminService } from '../services/kgAdminService';
 import { modelService } from '../services/modelService';
 import { modelProgressService } from '../services/modelProgressService';
 import { chatService } from '../services/api';
@@ -11,41 +10,6 @@ import type { ChatMessage } from '../types';
 import './Chat.css';
 
 export function Chat() {
-  // KG refresh state (must be inside component)
-  const [kgRefreshing, setKgRefreshing] = useState(false);
-  const [kgProgress, setKgProgress] = useState<number>(0);
-  const [kgStage, setKgStage] = useState<string>('');
-
-  // Poll KG refresh progress if running
-  useEffect(() => {
-    let interval: any;
-    if (kgRefreshing) {
-      const poll = async () => {
-        try {
-          const status = await kgAdminService.getStatus();
-          setKgProgress(status.progress);
-          setKgStage(status.stage);
-          if (status.progress >= 100 || status.stage.startsWith('Error')) {
-            setKgRefreshing(false);
-          }
-        } catch {
-          setKgStage('Error fetching status');
-          setKgRefreshing(false);
-        }
-      };
-      poll();
-      interval = setInterval(poll, 2000);
-    }
-    return () => clearInterval(interval);
-  }, [kgRefreshing]);
-
-  const handleKgRefresh = async () => {
-    setKgRefreshing(true);
-    setKgProgress(0);
-    setKgStage('Starting...');
-    await kgAdminService.refreshKG();
-  };
-
   const { currentSessionId, setCurrentSessionId, messages, setMessages, contextMode, isLoading, setIsLoading } = useApp();
   const [modelLoading, setModelLoading] = useState(false);
   const [modelStatus, setModelStatus] = useState<string>('');
@@ -209,20 +173,6 @@ export function Chat() {
     <div className="chat-container">
 
       <div className="chat-messages">
-        <div style={{ display: 'flex', justifyContent: 'flex-end', alignItems: 'center', gap: 12, marginBottom: 8 }}>
-          <button onClick={handleKgRefresh} disabled={kgRefreshing} style={{ padding: '6px 16px', borderRadius: 6, background: kgRefreshing ? '#ccc' : '#4b9cff', color: '#fff', border: 'none', cursor: kgRefreshing ? 'not-allowed' : 'pointer', fontWeight: 500, position: 'relative' }}>
-            {kgRefreshing ? 'Refreshing Knowledge Graph...' : 'Refresh Knowledge Graph'}
-          </button>
-          {kgRefreshing && (
-            <div style={{ display: 'inline-block', marginLeft: 8, minWidth: 120 }}>
-              <div style={{ background: '#eee', borderRadius: 8, height: 8, width: 120, position: 'relative', overflow: 'hidden', verticalAlign: 'middle' }}>
-                <div style={{ background: '#4b9cff', height: '100%', width: `${kgProgress}%`, borderRadius: 8, transition: 'width 0.5s' }} />
-              </div>
-              <div style={{ fontSize: 11, marginTop: 2, color: '#555' }}>{kgStage} ({kgProgress}%)</div>
-            </div>
-          )}
-        </div>
-
         {/* OLLAMA MODEL PROGRESS BAR (independent) */}
         {modelLoading && (
           <div className="model-loading-message" style={{ marginBottom: 24 }}>
@@ -256,7 +206,7 @@ export function Chat() {
           </div>
         )}
 
-        {(!modelLoading && !kgRefreshing && messages.length === 0) ? (
+        {(!modelLoading && messages.length === 0) ? (
           <div className="welcome-message">
             <h2>Welcome! 👋</h2>
             <p>I'm your AI assistant for delivery intelligence and decision support.</p>
@@ -277,7 +227,7 @@ export function Chat() {
         ) : (
           messages.map((msg: ChatMessage, index: number) => (
             <div key={index} className={`message ${msg.role}`}>
-              <div className="message-content" dangerouslySetInnerHTML={{ __html: marked(msg.content) }} />
+              <div className="message-content" dangerouslySetInnerHTML={{ __html: marked.parse(msg.content || '') as string }} />
               {msg.role === 'assistant' && msg.message_id && (
                 <div className="feedback-buttons">
                   <button

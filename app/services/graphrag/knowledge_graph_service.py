@@ -63,6 +63,12 @@ class KnowledgeGraphService:
         else:
             logger.info("No existing knowledge graph found, starting fresh")
     
+    def reload_graph(self):
+        """Public method to force reload graph from disk (e.g., after version switch)"""
+        logger.info("🔄 Reloading knowledge graph from disk...")
+        self._load_graph()
+        logger.info(f"✅ Graph reloaded: {self.graph.number_of_nodes()} nodes, {self.graph.number_of_edges()} edges")
+    
     def _save_graph(self):
         """Save knowledge graph to disk"""
         if not self.enabled:
@@ -140,10 +146,28 @@ class KnowledgeGraphService:
             "has_subtasks": issue_data.get("has_subtasks", False),
         }
         
+        # Normalize issue type to snake_case for consistent entity_type
+        raw_issue_type = issue_data.get("issue_type", "issue").lower().replace(" ", "_").replace("-", "_")
+        # Map common types
+        type_mapping = {
+            "story": "story",
+            "bug": "bug",
+            "task": "task",
+            "sub_task": "subtask",
+            "subtask": "subtask",
+            "epic": "epic",
+            "idea": "idea",
+            "initiative": "initiative",
+            "feature": "feature",
+            "improvement": "improvement",
+            "new_feature": "feature",
+        }
+        entity_type = type_mapping.get(raw_issue_type, "jira_issue")
+        
         # Add issue node
         self.add_entity(
             entity_id=issue_key,
-            entity_type="jira_issue",
+            entity_type=entity_type,
             properties=properties
         )
         
@@ -297,6 +321,33 @@ class KnowledgeGraphService:
                 properties={"name": label}
             )
             self.add_relationship(issue_key, label_id, "has_label")
+        
+        # Link to Confluence pages mentioned in description
+        description = issue_data.get("description", "") or ""
+        summary = issue_data.get("summary", "") or ""
+        full_text = f"{summary} {description}"
+        
+        # Find Confluence page references (various URL patterns)
+        import re
+        # Match patterns like /pages/viewpage.action?pageId=123 or /wiki/spaces/SPACE/pages/123
+        confluence_page_patterns = [
+            r'pageId=(\d+)',
+            r'/pages/(\d+)',
+            r'/wiki/spaces/[^/]+/pages/(\d+)',
+        ]
+        
+        mentioned_page_ids = set()
+        for pattern in confluence_page_patterns:
+            matches = re.findall(pattern, full_text)
+            mentioned_page_ids.update(matches)
+        
+        for page_id in mentioned_page_ids:
+            confluence_node_id = f"confluence:{page_id}"
+            # Only link if the page exists in the graph
+            if confluence_node_id in self.graph:
+                self.add_relationship(issue_key, confluence_node_id, "references")
+                self.add_relationship(confluence_node_id, issue_key, "referenced_by")
+                logger.debug(f"📎 Linked Jira issue {issue_key} to Confluence page {page_id}")
     
     def add_confluence_page(self, page_data: Dict[str, Any]):
         """Add a Confluence page to the knowledge graph with enhanced metadata"""
@@ -354,6 +405,23 @@ class KnowledgeGraphService:
                 properties={"key": space, "name": space_name}
             )
             self.add_relationship(f"confluence:{page_id}", space_id, "in_space")
+        
+        # Link to Jira issues mentioned in the content
+        content = page_data.get("content", "") or page_data.get("body", "")
+        title = page_data.get("title", "")
+        full_text = f"{title} {content}"
+        
+        # Find Jira issue references (PROJ-123 pattern)
+        import re
+        jira_pattern = r'\b([A-Z][A-Z0-9]+-\d+)\b'
+        mentioned_issues = set(re.findall(jira_pattern, full_text))
+        
+        for issue_key in mentioned_issues:
+            # Only link if the issue exists in the graph
+            if issue_key in self.graph:
+                self.add_relationship(f"confluence:{page_id}", issue_key, "references")
+                self.add_relationship(issue_key, f"confluence:{page_id}", "referenced_in")
+                logger.debug(f"📎 Linked Confluence page {page_id} to Jira issue {issue_key}")
     
     def get_entity(self, entity_id: str) -> Optional[Dict[str, Any]]:
         """Get an entity from the knowledge graph"""
@@ -644,11 +712,17 @@ class KnowledgeGraphService:
             entity_type = node_data.get("entity_type", "unknown")
             entity_types[entity_type] = entity_types.get(entity_type, 0) + 1
         
+        # Calculate average degree
+        num_nodes = self.graph.number_of_nodes()
+        num_edges = self.graph.number_of_edges()
+        avg_degree = (2.0 * num_edges / num_nodes) if num_nodes > 0 else 0.0
+        
         return {
             "enabled": True,
-            "total_nodes": self.graph.number_of_nodes(),
-            "total_edges": self.graph.number_of_edges(),
+            "total_nodes": num_nodes,
+            "total_edges": num_edges,
             "entity_types": entity_types,
+            "avg_degree": round(avg_degree, 2),
             "graph_path": self.graph_path
         }
     
@@ -887,6 +961,28 @@ class KnowledgeGraphService:
         self.community_summaries = {}  # Clear community summaries too
         self._save_graph()
         logger.info("✅ Knowledge graph cleared")
+    
+    def save_graph(self):
+        """Public method to save the knowledge graph to disk"""
+        self._save_graph()
+    
+    def get_stats(self) -> Dict[str, Any]:
+        """Get statistics about the knowledge graph"""
+        if not self.enabled:
+            return {"enabled": False, "nodes": 0, "edges": 0}
+        
+        # Count nodes by type
+        type_counts = {}
+        for node, data in self.graph.nodes(data=True):
+            entity_type = data.get("entity_type", "unknown")
+            type_counts[entity_type] = type_counts.get(entity_type, 0) + 1
+        
+        return {
+            "enabled": True,
+            "nodes": self.graph.number_of_nodes(),
+            "edges": self.graph.number_of_edges(),
+            "node_types": type_counts
+        }
     
     # ========== Graph RAG: Community Detection and Summarization ==========
     

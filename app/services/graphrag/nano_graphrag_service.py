@@ -264,6 +264,132 @@ class NanoGraphRAGService:
         
         return ollama_embedding
     
+    # =========================================================================
+    # Fast Vector Indexing (No LLM Entity Extraction)
+    # =========================================================================
+    
+    def index_entities_fast(
+        self,
+        entities: List[Dict[str, Any]],
+        progress_callback: Optional[callable] = None
+    ) -> Dict[str, Any]:
+        """
+        Index entities using ONLY vector embeddings - no LLM entity extraction.
+        
+        This is the HYBRID approach:
+        - Graph structure comes from NetworkX (explicit relationships)
+        - Semantic search comes from embeddings (implicit similarity)
+        
+        ~100x faster than full insert() because it skips LLM parsing.
+        
+        Args:
+            entities: List of dicts with 'id', 'type', 'text' fields
+            progress_callback: Optional fn(current, total) for progress updates
+            
+        Returns:
+            Stats dict with counts
+        """
+        if not entities:
+            return {"indexed": 0}
+        
+        logger.info(f"⚡ Fast-indexing {len(entities)} entities (embeddings only, no LLM)...")
+        
+        indexed = 0
+        batch_size = 10  # Embed in small batches
+        
+        for i in range(0, len(entities), batch_size):
+            batch = entities[i:i + batch_size]
+            
+            for entity in batch:
+                try:
+                    entity_id = entity.get('id', '')
+                    entity_type = entity.get('type', 'unknown')
+                    text = entity.get('text', '')
+                    
+                    if not text:
+                        continue
+                    
+                    # Generate embedding directly (no LLM parsing)
+                    embedding = ollama.embeddings(
+                        model=self.EMBEDDING_MODEL,
+                        prompt=text[:2000]  # Truncate long texts
+                    )["embedding"]
+                    
+                    # Store in the vector database
+                    # nano-graphrag uses vdb_entities for entity embeddings
+                    if hasattr(self.rag, 'entities_vdb') and self.rag.entities_vdb:
+                        asyncio.get_event_loop().run_until_complete(
+                            self.rag.entities_vdb.upsert({
+                                entity_id: {
+                                    "embedding": embedding,
+                                    "entity_type": entity_type,
+                                    "content": text[:500],  # Store summary
+                                }
+                            })
+                        )
+                    
+                    indexed += 1
+                    
+                except Exception as e:
+                    logger.warning(f"Failed to index {entity.get('id', '?')}: {e}")
+            
+            # Progress update
+            if progress_callback:
+                progress_callback(i + len(batch), len(entities))
+        
+        logger.info(f"✅ Fast-indexed {indexed}/{len(entities)} entities")
+        return {"indexed": indexed, "total": len(entities)}
+    
+    def semantic_search(
+        self,
+        query: str,
+        top_k: int = 10,
+        entity_types: Optional[List[str]] = None
+    ) -> List[Dict[str, Any]]:
+        """
+        Search for semantically similar entities using embeddings.
+        
+        This works even without LLM entity extraction - just needs indexed embeddings.
+        
+        Args:
+            query: Natural language search query
+            top_k: Number of results to return
+            entity_types: Optional filter by entity type
+            
+        Returns:
+            List of matching entities with scores
+        """
+        try:
+            # Get query embedding
+            query_embedding = ollama.embeddings(
+                model=self.EMBEDDING_MODEL,
+                prompt=query
+            )["embedding"]
+            
+            # Search the vector database
+            if hasattr(self.rag, 'entities_vdb') and self.rag.entities_vdb:
+                results = asyncio.get_event_loop().run_until_complete(
+                    self.rag.entities_vdb.query(
+                        query_embedding,
+                        top_k=top_k * 2  # Get more, then filter
+                    )
+                )
+                
+                # Filter by entity type if specified
+                if entity_types and results:
+                    results = [
+                        r for r in results
+                        if r.get("entity_type") in entity_types
+                    ]
+                
+                return results[:top_k]
+            
+            return []
+            
+        except Exception as e:
+            logger.error(f"Semantic search failed: {e}")
+            return []
+    
     def insert(self, text: str) -> None:
         """
         Insert text into the graph RAG.

@@ -11,7 +11,7 @@ import logging
 from app.config import settings
 from app.models.schemas import ChatRequest, ChatResponse, ChatMessage, ConversationHistory
 from app.models.database import get_db, Conversation, Session as SessionModel
-from app.services.graphrag.rl_service import rl_service
+from app.services.rl.rl_service import get_rl_service
 
 logger = logging.getLogger(__name__)
 
@@ -82,8 +82,9 @@ async def chat(request: ChatRequest, db: Session = Depends(get_db)):
         history_dicts = [{"role": h.role, "content": h.content} for h in history]
         
         # Get RL recommendation
-        state_vector = rl_service.encode_state(request.message, history_dicts)
-        recommended_action = rl_service.recommend_action(
+        rl = get_rl_service()
+        state_vector = rl.encode_state(request.message, history_dicts)
+        recommended_action = rl.recommend_action(
             request.message, history_dicts, 
             {"message_count": session.message_count, "avg_feedback": 0.0}
         )
@@ -108,10 +109,19 @@ async def chat(request: ChatRequest, db: Session = Depends(get_db)):
         db.add(assistant_message)
         db.flush()
         
-        # Record RL interaction
-        rl_service.record_interaction(
-            db, session_id, assistant_message.id, state_vector, recommended_action
-        )
+        # Record RL interaction (with backward-compatible signature)
+        try:
+            rl_service.record_interaction(
+                db=db,
+                session_id=session_id,
+                message_id=assistant_message.id,
+                message=request.message,
+                conversation_history=history_dicts,
+                tool_used=recommended_action,
+                style_used="balanced"  # Default style for now
+            )
+        except Exception as rl_err:
+            logger.warning(f"RL recording failed (non-critical): {rl_err}")
         
         db.commit()
         db.refresh(assistant_message)
