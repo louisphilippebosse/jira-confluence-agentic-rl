@@ -1,0 +1,162 @@
+.approvals-page {
+  padding: 2rem;
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+.approvals-header {
+  margin-bottom: 2rem;
+}
+
+.approvals-header h1 {
+  color: #172b4d;
+  margin-bottom: 0.5rem;
+}
+
+.approvals-header p {
+  color: #5e6c84;
+}
+
+.error-message {
+  background: #ffebe6;
+  border: 1px solid #ff5630;
+  color: #bf2600;
+  padding: 1rem;
+  border-radius: 8px;
+  margin-bottom: 1rem;
+}
+
+.empty-state {
+  text-align: center;
+  padding: 4rem 2rem;
+  background: white;
+  border-radius: 8px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.12);
+}
+
+.empty-state p {
+  font-size: 1.2rem;
+  color: #172b4d;
+  margin-bottom: 0.5rem;
+}
+
+.empty-desc {
+  font-size: 0.9rem;
+  color: #5e6c84;
+}
+
+.approvals-list {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+.approval-card {
+  background: white;
+  border-radius: 8px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.12);
+  padding: 1.5rem;
+  border-left: 4px solid #ffab00;
+}
+
+.approval-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1rem;
+  padding-bottom: 1rem;
+  border-bottom: 1px solid #dfe1e6;
+}
+
+.approval-action {
+  font-weight: 600;
+  color: #172b4d;
+  font-size: 1.1rem;
+}
+
+.approval-time {
+  color: #5e6c84;
+  font-size: 0.85rem;
+}
+
+.approval-preview {
+  margin-bottom: 1rem;
+}
+
+.preview-field {
+  margin-bottom: 0.75rem;
+}
+
+.preview-field strong {
+  display: block;
+  margin-bottom: 0.25rem;
+  color: #172b4d;
+}
+
+.preview-field pre {
+  background: #f4f5f7;
+  padding: 0.75rem;
+  border-radius: 4px;
+  overflow-x: auto;
+  font-size: 0.9rem;
+  color: #172b4d;
+}
+
+.approval-parameters details {
+  margin-bottom: 1rem;
+}
+
+.approval-parameters summary {
+  cursor: pointer;
+  color: #0052cc;
+  font-size: 0.9rem;
+  user-select: none;
+}
+
+.approval-parameters summary:hover {
+  text-decoration: underline;
+}
+
+.approval-parameters pre {
+  margin-top: 0.5rem;
+  background: #f4f5f7;
+  padding: 0.75rem;
+  border-radius: 4px;
+  overflow-x: auto;
+  font-size: 0.85rem;
+}
+
+.approval-actions {
+  display: flex;
+  gap: 1rem;
+  justify-content: flex-end;
+}
+
+.btn-approve,
+.btn-reject {
+  padding: 0.75rem 1.5rem;
+  border: none;
+  border-radius: 6px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+  font-size: 1rem;
+}
+
+.btn-approve {
+  background: #00875a;
+  color: white;
+}
+
+.btn-approve:hover {
+  background: #006644;
+}
+
+.btn-reject {
+  background: #ff5630;
+  color: white;
+}
+
+.btn-reject:hover {
+  background: #de350b;
+}
